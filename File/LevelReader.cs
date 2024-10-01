@@ -13,7 +13,7 @@ using System.Xml.Linq;
 namespace Labb2_CsProg_ITHS.NET.Files;
 internal static class LevelReader
 {
-	internal static Level ReadLevel(string path)
+	internal static async Task<Level> ReadLevel(string path)
 	{
 		// Read the file and create a Level object
 		if (!Path.Exists(path))
@@ -27,12 +27,12 @@ internal static class LevelReader
 		var length = fileStream.Length;
 		//byte[] buffer = new byte[1024];
 
-		var stream = new MemoryStream(64);
-		var queue = new ConcurrentQueue<byte>();
+		//var stream = new MemoryStream(64);
+		var queue = new ConcurrentQueue<byte[]>();
 		//fileStream.CopyToAsync(stream);
-		Task t = CopyTest(fileStream, stream);
+		Task t = CopyTest(fileStream, queue);
 
-		return ParseLevel(stream, queue, length, t);
+		return await ParseLevel(queue, length, t);
 		//int numRead;
 		//while ((numRead = await fileStream.ReadAsync(buffer, 0, buffer.Length)) != 0)
 		//{
@@ -44,22 +44,22 @@ internal static class LevelReader
 		//Span2D<char> levelData = new Span2D<char>();
 
 	}
-	private static async Task CopyTest(FileStream fileStream, MemoryStream dataStream)
+	private static async Task CopyTest(FileStream fileStream, ConcurrentQueue<byte[]> queue)
 	{
 		//await fileStream.CopyToAsync(dataStream);
 		int numRead = 0;
 		int bytesRead=-1;
 		while (bytesRead != 0)
 		{
-			byte[] buffer = new byte[64];
-			bytesRead = await fileStream.ReadAsync(buffer, 0, 64);
-			await Task.Delay(100);
-			await dataStream.WriteAsync(buffer);
+			byte[] buffer = new byte[1024];
+			bytesRead = await fileStream.ReadAsync(buffer, 0, 1024);
 			numRead++;
-            Console.WriteLine($"copying to stream {numRead} times");
+            Console.WriteLine($"{DateTime.Now.Ticks}: copying to stream {numRead} times");
+			queue.Enqueue(buffer);
+			//await Task.Delay(10);
 		}
 	}
-	private static Level ParseLevel(MemoryStream dataStream, ConcurrentQueue<byte> queue, long length, Task source)
+	private static async Task<Level> ParseLevel(ConcurrentQueue<byte[]> queue, long length, Task source)
 	{
 		LevelElement?[] elements = new LevelElement?[length];
 		List<LevelEntity> enemies = new();
@@ -71,77 +71,88 @@ internal static class LevelReader
 		int emptyTiles = 0;
 		int leastEmptyTiles = int.MaxValue;
 		int count = 0;
-		int i=0;
 		int delayCount = 0;
-		while (!source.IsCompleted || count < dataStream.Capacity)
+
+		while (!source.IsCompleted || queue.Count > 0)
 		{
-			i = dataStream.ReadByte();
-			if(i == -1)
+			if(!queue.TryDequeue(out var nextChunk))
 			{
+
 				delayCount++;
-				Task.Delay(10);
+				Console.WriteLine($"{DateTime.Now.Ticks}: Delayed {delayCount} times.");
+				//await Task.Delay(10);
 				continue;
 			}
-            Console.WriteLine($"Delayed {delayCount} times.");
 			delayCount = 0;
-			c = (char)i;
-			Console.WriteLine($"copied stream length: {dataStream.Length} count: {count} char: {c}");
-			switch (c)
-			{
-				case '#':
-					elements[count] = new Wall(x,y);
-					break;
-				case '@':
-					elements[count] = p = new Player(x, y);
-					break;
-				//case 'E':
-				//	_staticElements[x, y] = new Exit();
-				//	break;
-				case 'r':
-					var r = new Rat(x, y);
-					enemies.Add(r);
-					elements[count] = r;
-					break;
-				case 's':
-					var s = new Snake(x, y);
-					enemies.Add(s);
-					elements[count] = s;
-					break;
-				case '\n':
-					y++;
-					if(width > 0) {
-						if (width != x)
-							throw new InvalidDataException("Invalid level data");
-					}
-					else
-					{
-						width = x;
-					}
-					x = 0;
-					leastEmptyTiles = Math.Min(leastEmptyTiles, emptyTiles);
-					emptyTiles = 0;
-					continue;
-				case ' ':
-				default:
-					emptyTiles++;
-					elements[count] = null;
-					x++;
-					count++;
-					continue;
-			}
-			emptyTiles = 0;
-			x++;
-			count++;
+			
+			ParseChunk(nextChunk);
 
+			Console.WriteLine($"{DateTime.Now.Ticks}: Processed queue count: {count}");
 		}
 		if(p == null)
 			throw new InvalidDataException("No player in level data");
 
-		Span2D<LevelElement?> grid = new(elements, 0, elements.Length, width - leastEmptyTiles, leastEmptyTiles);
+		//Span2D<LevelElement?> grid = new(elements, 0, elements.Length, width - leastEmptyTiles, leastEmptyTiles);
 		//LevelElement?[,] grid = Array.;
 
 
-		return new(grid, enemies, p);
+		return new(new(elements, 0, elements.Length, width - leastEmptyTiles, leastEmptyTiles), enemies, p);
 
+		void ParseChunk(byte[] chunk)
+		{
+			var span = chunk.AsSpan();
+			for (int i = 0; i < span.Length; i++)
+			{
+				if (count >= length) break;
+				c = (char)span[i];
+				switch (c)
+				{
+					case '#':
+						elements[count] = new Wall(x, y);
+						break;
+					case '@':
+						elements[count] = p = new Player(x, y);
+						break;
+					//case 'E':
+					//	_staticElements[x, y] = new Exit();
+					//	break;
+					case 'r':
+						var r = new Rat(x, y);
+						enemies.Add(r);
+						elements[count] = r;
+						break;
+					case 's':
+						var s = new Snake(x, y);
+						enemies.Add(s);
+						elements[count] = s;
+						break;
+					case '\n':
+						y++;
+						if (width > 0)
+						{
+							if (width != x)
+								throw new InvalidDataException("Invalid level data");
+						}
+						else
+						{
+							width = x;
+						}
+						x = 0;
+						leastEmptyTiles = Math.Min(leastEmptyTiles, emptyTiles);
+						emptyTiles = 0;
+						continue;
+					case ' ':
+					default:
+						emptyTiles++;
+						elements[count] = null;
+						x++;
+						count++;
+						continue;
+				}
+				emptyTiles = 0;
+				x++;
+				count++;
+			}
+		}
 	}
 }

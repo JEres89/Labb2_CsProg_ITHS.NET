@@ -14,17 +14,17 @@ internal class Level
 
 	public Player Player { get; private set; }
 
-	private LevelElement?[,] _staticElements;
+	private LevelElement?[,] _elements;
 	private LevelElement?[,] _discovered;
-	private LevelElement?[,] _actorElements;
+	private List<LevelEntity> _enemies;
 
 	internal Level(ReadOnlySpan2D<LevelElement?> levelData, List<LevelEntity> enemies, Player player)
 	{
 		Width = levelData.Width;
 		Height = levelData.Height;
-		_staticElements = levelData.ToArray();
+		_elements = levelData.ToArray();
 		_discovered = new LevelElement?[Width, Height];
-		_actorElements = new LevelElement?[Width, Height];
+		_enemies = enemies;
 
 		Player = player;
 
