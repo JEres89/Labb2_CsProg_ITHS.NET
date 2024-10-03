@@ -27,23 +27,141 @@ internal static class LevelReader
 		var length = fileStream.Length;
 		//byte[] buffer = new byte[1024];
 
-		//var stream = new MemoryStream(64);
-		var queue = new ConcurrentQueue<byte[]>();
 		//fileStream.CopyToAsync(stream);
-		Task t = CopyTest(fileStream, queue);
+		//var stream = new MemoryStream(64);
 
-		return await ParseLevel(queue, length, t);
+		//var queue = new ConcurrentQueue<byte[]>();
+		//Task t = CopyTest(fileStream, queue);
+		//return await ParseLevel(queue, length, t);
+
+		IAsyncEnumerable<byte[]> fileBuffer = EnumerateFile(fileStream);
+		return await ParseByEnumeration(fileBuffer, (int)length);
+
 		//int numRead;
 		//while ((numRead = await fileStream.ReadAsync(buffer, 0, buffer.Length)) != 0)
 		//{
 		//	var text = Encoding.Unicode.GetChars(buffer, 0, numRead);
-
 		//}
 
 
 		//Span2D<char> levelData = new Span2D<char>();
 
 	}
+
+	private static async IAsyncEnumerable<byte[]> EnumerateFile(FileStream fileStream)
+	{
+		byte[] buffer = new byte[64];
+		int bytesRead;
+		while ((bytesRead = await fileStream.ReadAsync(buffer, 0, 64)) != 0)
+		{
+			yield return buffer;
+			buffer = new byte[64];
+            Console.WriteLine("Fileposition: "+fileStream.Position);
+		}
+
+	}
+	private static async Task<Level> ParseByEnumeration(IAsyncEnumerable<byte[]> stream, int length)
+	{
+		LevelElement?[] elements = new LevelElement?[length];
+		List<LevelEntity> enemies = new();
+		Player? p = null;
+		int y = 0;
+		int x = 0;
+		int width = 0;
+		int emptyTiles = 0;
+		int leastEmptyTiles = int.MaxValue;
+		int emptyRows = 0;
+		int count = 0;
+
+		while(count < length)
+		{
+			await foreach (var chunk in stream)
+			{
+				ParseChunk(chunk);
+			}
+		}
+
+		if (p == null)
+			throw new InvalidDataException("No player in level data");
+
+		return new(new(elements, 0, y-emptyRows, width - leastEmptyTiles, leastEmptyTiles), enemies, p);
+
+		void ParseChunk(byte[] chunk)
+		{
+			var span = chunk.AsSpan();
+			for (int i = 0; i < span.Length; i++)
+			{
+				if (count >= length) break;
+				char c = (char)span[i];
+				switch (c)
+				{
+					case '#':
+						elements[count] = new Wall(x, y, c);
+						break;
+					case '@':
+						elements[count] = p = new Player(x, y, c);
+						break;
+					//case 'E':
+					//	_staticElements[x, y] = new Exit();
+					//	break;
+					case 'r':
+						var r = new Rat(x, y, c);
+						enemies.Add(r);
+						elements[count] = r;
+						break;
+					case 's':
+						var s = new Snake(x, y, c);
+						enemies.Add(s);
+						elements[count] = s;
+						break;
+					case '\n':
+						y++;
+						if (width > 0)
+						{
+							if (width != x)
+								throw new InvalidDataException("Invalid level data");
+						}
+						else
+						{
+							width = x;
+						}
+						x = 0;
+						if(emptyTiles == width)
+						{
+							emptyRows++;
+						}
+                        else
+                        {
+							emptyRows = 0;
+						}
+                        leastEmptyTiles = Math.Min(leastEmptyTiles, emptyTiles);
+						emptyTiles = 0;
+						continue;
+					case ' ':
+					default:
+						emptyTiles++;
+						elements[count] = null;
+						x++;
+						count++;
+						continue;
+				}
+				emptyTiles = 0;
+				x++;
+				count++;
+			}
+		}
+	}
+	//static void AnonParam()
+	//{
+	//	var typ = new { Name = "John", Age = 18 };
+	//	TryTyp(typ, t => $"{t.Name} är {t.Age}");
+	//}
+
+	//static void TryTyp<T>(T typ, Func<T, string> toString)
+	//{
+	//		Console.WriteLine(toString(typ));
+	//}
+
 	private static async Task CopyTest(FileStream fileStream, ConcurrentQueue<byte[]> queue)
 	{
 		//await fileStream.CopyToAsync(dataStream);
@@ -51,6 +169,7 @@ internal static class LevelReader
 		int bytesRead=-1;
 		while (bytesRead != 0)
 		{
+			fileStream.ReadByte();
 			byte[] buffer = new byte[1024];
 			bytesRead = await fileStream.ReadAsync(buffer, 0, 1024);
 			numRead++;
@@ -108,21 +227,21 @@ internal static class LevelReader
 				switch (c)
 				{
 					case '#':
-						elements[count] = new Wall(x, y);
+						elements[count] = new Wall(x, y, c);
 						break;
 					case '@':
-						elements[count] = p = new Player(x, y);
+						elements[count] = p = new Player(x, y, c);
 						break;
 					//case 'E':
 					//	_staticElements[x, y] = new Exit();
 					//	break;
 					case 'r':
-						var r = new Rat(x, y);
+						var r = new Rat(x, y, c);
 						enemies.Add(r);
 						elements[count] = r;
 						break;
 					case 's':
-						var s = new Snake(x, y);
+						var s = new Snake(x, y, c);
 						enemies.Add(s);
 						elements[count] = s;
 						break;

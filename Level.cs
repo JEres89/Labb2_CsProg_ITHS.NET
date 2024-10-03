@@ -31,6 +31,24 @@ internal class Level
 		//ParseLevel(levelData);
 	}
 
+	public override string ToString()
+	{
+		StringBuilder sb = new();
+		var span = _elements.AsSpan2D();
+
+		for (int y = 0; y < Height; y++)
+		{
+			for (int x = 0; x < Width; x++)
+			{
+
+				sb.Append(span[y,x]);
+			}
+			//sb.Append('|');
+			sb.AppendLine();
+		}
+		return sb.ToString();
+	}
+
 
 	//private void ParseLevel(ReadOnlySpan2D<char> levelData)
 	//{

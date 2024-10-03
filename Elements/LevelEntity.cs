@@ -7,13 +7,26 @@ using System.Threading.Tasks;
 namespace Labb2_CsProg_ITHS.NET.Elements;
 internal abstract class LevelEntity : LevelElement
 {
-	public int X { get; private set; }
-	public int Y { get; private set; }
+	protected Dictionary<Allegiance, Interaction> relationships = new();
 
-	internal LevelEntity(int x, int y)
+	internal LevelEntity(int x, int y, char symbol)
 	{
 		X = x;
 		Y = y;
+		Symbol = symbol;
 	}
 
+	protected Interaction GetReaction(Allegiance allegiance)
+	{
+		return relationships[allegiance];
+	}
+	internal abstract Allegiance GetAllegiance(LevelEntity entity);
+
+	internal enum Allegiance
+	{
+		None,
+		Neutral,
+		Enemy,
+		Friend
+	}
 }
