@@ -7,13 +7,19 @@ using System.Threading.Tasks;
 namespace Labb2_CsProg_ITHS.NET.Elements;
 internal abstract class LevelElement
 {
-	public int X { get; protected set; }
-	public int Y { get; protected set; }
+	public Position Pos { get; protected set; }
 	public char Symbol { get; protected set; }
+	public string Name { get; protected set; }
+	public string Description { get; protected set; }
+
 
 	public static explicit operator char(LevelElement element) => element == null ? ' ' : element.Symbol;
 
 	internal abstract Interaction Collide(LevelElement element);
+
+	internal abstract void Update(Level CurrentLevel);
+
+	internal abstract (char c, ConsoleColor fg, ConsoleColor bg) GetRenderData(bool isDiscovered, bool isInView);
 
 	internal enum Interaction
 	{

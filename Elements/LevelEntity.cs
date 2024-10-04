@@ -9,10 +9,10 @@ internal abstract class LevelEntity : LevelElement
 {
 	protected Dictionary<Allegiance, Interaction> relationships = new();
 
-	internal LevelEntity(int x, int y, char symbol)
+    public int ViewRange { get; set; }
+    internal LevelEntity(Position p, char symbol)
 	{
-		X = x;
-		Y = y;
+		Pos = p;
 		Symbol = symbol;
 	}
 

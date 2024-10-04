@@ -6,13 +6,14 @@ internal class Program
 {
 	static void Main(string[] args)
 	{
-		var level = LevelReader.ReadLevel(".\\Levels\\Level1.txt");
+		var game = new Game(1, null);
+		game.GameStart();
 
 		//int i = 0;
 		//while (!level.IsCompleted)
 		//{
 		//	i++;
-  //          Console.WriteLine($"{DateTime.Now.Ticks}: Doing things while the level is construction {i} times");
+		//          Console.WriteLine($"{DateTime.Now.Ticks}: Doing things while the level is construction {i} times");
 		//	Thread.Sleep(100);
 		//}
 
