@@ -28,7 +28,7 @@ internal class Level
 		Width = levelData.Width;
 		Height = levelData.Height;
 		_elements = levelData.ToArray();
-		_discovered = new bool[Width, Height];
+		_discovered = new bool[Height, Width];
 		_enemies = enemies;
 
 		Player = player;
@@ -69,9 +69,9 @@ internal class Level
 			_playerView.Clear();
 		}
 
-		for (int y = Math.Max((pos.Y - viewRange), 0); y < Math.Min((pos.Y + viewRange), Height); y++)
+		for (int y = Math.Max((pos.Y - viewRange), 0); y <= Math.Min((pos.Y + viewRange), Height); y++)
 		{
-			for (int x = Math.Max((pos.X - viewRange), 0); x < Math.Min((pos.X + viewRange), Width); x++)
+			for (int x = Math.Max((pos.X - viewRange), 0); x <= Math.Min((pos.X + viewRange), Width); x++)
 			{
 				if(_playerView.ContainsKey((y, x)))
 				{
@@ -89,14 +89,30 @@ internal class Level
 			}
 		}
 	}
-
+	internal void ReRender()
+	{
+		RenderAll();
+		FlushToRenderer();
+	}
 	internal void RenderAll()
 	{
 		_renderQueue.Clear();
-		foreach (var item in _elements) {
-			if (item != null && _discovered[item.Pos.Y,item.Pos.X])
+		for (int y = 0; y < Height; y++)
+		{
+			for (int x = 0; x < Width; x++)
 			{
-				_renderQueue[(item.Pos.Y, item.Pos.X)] = item.GetRenderData(true, _playerView.ContainsKey((item.Pos.Y, item.Pos.X)));
+				if (_discovered[y,x])
+				{
+					var e = _elements[y,x];
+					if (e != null)
+					{
+						_renderQueue[e.Pos.ToTuple()] = e.GetRenderData(true, _playerView.ContainsKey((e.Pos.Y, e.Pos.X)));
+					}
+					else
+					{
+						_renderQueue[(y, x)] = (' ', ConsoleColor.Black, _playerView.ContainsKey((y, x)) ? LevelElement.BackroundVisibleEmpty : LevelElement.BackroundDiscoveredEmpty);
+					}
+				}
 			}
 		}
 	}

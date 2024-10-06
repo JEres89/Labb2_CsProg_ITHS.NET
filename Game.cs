@@ -30,7 +30,7 @@ internal class Game
 	{
 		Initialize();
 
-		var inputTask = Task.Run(input.Start);
+		input.InputListener = Task.Run(input.Start);
 		GameLoop();
 	}
 
@@ -57,14 +57,21 @@ internal class Game
 	{
 		int tickTime = 100;
 		Stopwatch tickTimer = new();
+		int ticks = 0;
 		while (true)
 		{
 			tickTimer.Restart();
 
 			Update();
 
+			if(ticks % 10 == 0)
+			{
+				Renderer.AddLogLine($"Game tick #{ticks}");
+			}
+
 			Render();
 
+			ticks++;
 			int timeLeft = tickTime - ((int)tickTimer.ElapsedMilliseconds);
 			if (timeLeft > 0)
 				Thread.Sleep(timeLeft);

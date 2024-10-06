@@ -31,5 +31,8 @@ internal abstract class LevelElement
 		Trigger,	//triggers an event elsewhere
 		Status,     //Causes a passive lingering effect on the instigator
 	}
+
+	public static ConsoleColor BackroundVisibleEmpty { get; } = ConsoleColor.Gray;
+	public static ConsoleColor BackroundDiscoveredEmpty { get; } = ConsoleColor.DarkGray;
 }
 

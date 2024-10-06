@@ -10,20 +10,28 @@ internal class Renderer
 	public static Renderer Instance { get; private set; } = new();
 	private Renderer() { }
 
-	private readonly Queue<((int y, int x) pos, (char c, ConsoleColor fg, ConsoleColor bg) gfx)> _updateQueue = new();
-    public int MapXoffset { get; set; }
-	public int MapYoffset { get; set; }
+	private readonly Queue<((int y, int x) pos, (char c, ConsoleColor fg, ConsoleColor bg) gfx)> _mapUpdateQueue = new();
+	private readonly Queue<((int y, int x) pos, (string s, ConsoleColor fg, ConsoleColor bg) gfx)> _uiUpdateQueue = new();
+	private readonly List<string> _log = new();
+	private readonly Queue<string> _logUpdateQueue = new();
+
+	
+	public int MapXoffset { get; set; }
+	public int MapYoffset { get ; set; }
 	public int MapWidth { get; set; }
 	public int MapHeight { get; set; }
+    //public int LogLength { get; set; }
+    private int logWidth => bufferWidth - MapXoffset - MapWidth;
+	private int logHeight = 0;
 
-	private int logMinWidth = 15;
-	private int topBarHeigth = 4;
+    private int logMinWidth = 15;
+	private int topBarHeight = 4;
 
 	private int bufferWidth;
 	private int bufferHeight;
 
 	private int minWidth => MapXoffset + MapWidth + logMinWidth;
-	private int minHeight => MapYoffset + MapHeight + topBarHeigth;
+	private int minHeight => MapYoffset + MapHeight + topBarHeight;
 	internal void Initialize()
 	{
 		Console.CursorVisible = false;
@@ -39,33 +47,91 @@ internal class Renderer
 	internal void Render()
 	{
 		CheckConsoleBounds();
-		while (_updateQueue.TryDequeue(out var data))
+		while (_mapUpdateQueue.TryDequeue(out var data))
+		{
+			var (pos, gfx) = data;
+			Console.SetCursorPosition(pos.x+MapXoffset, pos.y+MapYoffset);
+			Console.ForegroundColor = gfx.fg;
+			Console.BackgroundColor = gfx.bg;
+			Console.Write(gfx.c);
+		}
+		while (_uiUpdateQueue.TryDequeue(out var data))
 		{
 			var (pos, gfx) = data;
 			Console.SetCursorPosition(pos.x, pos.y);
 			Console.ForegroundColor = gfx.fg;
 			Console.BackgroundColor = gfx.bg;
-			Console.Write(gfx.c);
+			Console.Write(gfx.s);
+		}
+
+		RenderLog();
+	}
+	private void RenderLog()
+	{
+		if (_logUpdateQueue.Count == 0)
+		{
+			return;
+		}
+		List<string> logLines = new();
+		int logStartX = MapWidth + MapXoffset;
+		while (_logUpdateQueue.TryDequeue(out var line))
+		{
+			_log.Add(line);
+			var lineChars = 0;
+
+			while(lineChars < line.Length)
+			{
+				int takeChars = Math.Min(logWidth, line.Length-lineChars);
+				logLines.Add(line.Substring(lineChars, takeChars));
+				lineChars += takeChars;
+			}
+		}
+		if(logLines.Count > bufferHeight)
+		{
+			logLines.RemoveRange(0, logLines.Count - bufferHeight);
+		}
+
+		int logOverflow = logHeight + logLines.Count - bufferHeight;
+		if (logOverflow > 0)
+		{
+			Console.MoveBufferArea(logStartX, logOverflow, logWidth, logHeight-logOverflow, logStartX, 0);
+			logHeight -= logOverflow;
+		}
+		Console.ForegroundColor = ConsoleColor.White;
+		Console.BackgroundColor = ConsoleColor.Black;
+		foreach (var line in logLines)
+		{
+			Console.SetCursorPosition(logStartX, logHeight);
+			Console.Write(line);
+			logHeight++;
 		}
 	}
 	internal void SetMapCoordinates(int mapStartTop, int mapStartLeft, int height, int width)
 	{
-		MapYoffset = mapStartTop;
-		MapXoffset = mapStartLeft;
+		MapYoffset = Math.Max(mapStartTop, topBarHeight);
+		MapXoffset = Math.Max(mapStartLeft, 0);
 		MapHeight = height;
 		MapWidth = width;
 	}
 
 	internal void AddMapUpdate(((int y, int x) pos, (char c, ConsoleColor fg, ConsoleColor bg) gfx) renderData)
 	{
-		_updateQueue.Append(renderData);
+		_mapUpdateQueue.Append(renderData);
 	}
 	internal void AddMapUpdate(Dictionary<(int y, int x), (char c, ConsoleColor fg, ConsoleColor bg)> renderData)
 	{
 		foreach (var item in renderData)
 		{
-			_updateQueue.Enqueue((item.Key, item.Value));
+			_mapUpdateQueue.Enqueue((item.Key, item.Value));
 		}
+	}
+	internal void AddUiUpdate(((int y, int x) pos, (string s, ConsoleColor fg, ConsoleColor bg) gfx) renderData)
+	{
+		_uiUpdateQueue.Enqueue(renderData);
+	}
+	internal void AddLogLine(string line)
+	{
+		_logUpdateQueue.Enqueue(line);
 	}
 
 	private void CheckConsoleBounds()
@@ -73,27 +139,28 @@ internal class Renderer
 		if (Console.WindowWidth != bufferWidth || Console.WindowHeight != bufferHeight)
 		{
 			Console.Clear();
-			InputHandler.Instance.Stop();
 			PauseMessage("Window is being resized");
 			bufferWidth = Console.WindowWidth;
 			bufferHeight = Console.WindowHeight;
 			WindowResize();
 			Console.Clear();
-			InputHandler.Instance.Start();
 		}
 	}
 
 	private void WindowResize()
 	{
-		Console.Clear();
 
 		while (bufferWidth < minWidth || bufferHeight < minHeight)
 		{
+			Console.Clear();
 			PauseMessage($"Window size is too small: w:{bufferWidth}/min:{minWidth}, h:{bufferHeight}/min:{minHeight}");
 
 			bufferWidth = Console.WindowWidth;
 			bufferHeight = Console.WindowHeight;
 		}
+		Game.Instance.CurrentLevel.ReRender();
+		logHeight = 0;
+		 _log[Math.Max(_log.Count-bufferHeight, 0)..].ForEach(s => AddLogLine(s));
 	}
 
 	private void PauseMessage(string reason)
@@ -109,7 +176,7 @@ internal class Renderer
 		string resume = "Press any key to resume";
 		Console.SetCursorPosition(Math.Max((width - resume.Length) / 2, 0), height / 2 + 3);
 		Console.Write(resume);
-
-		Console.ReadKey(true);
+		
+		_ = InputHandler.Instance.AwaitNextKey();
 	}
 }

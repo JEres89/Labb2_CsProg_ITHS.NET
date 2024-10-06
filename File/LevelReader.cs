@@ -98,21 +98,21 @@ internal static class LevelReader
 			switch (c)
 			{
 				case '#':
-					elements[count] = new Wall(new(x, y), c);
+					elements[count] = new Wall(new(y, x), c);
 					break;
 				case '@':
-					elements[count] = p = new PlayerEntity(new(x, y), c);
+					elements[count] = p = new PlayerEntity(new(y, x), c);
 					break;
 				//case 'E':
-				//	_staticElements[x, y] = new Exit();
+				//	_staticElements[y, x] = new Exit();
 				//	break;
 				case 'r':
-					var r = new Rat(new(x, y), c);
+					var r = new Rat(new(y, x), c);
 					enemies.Add(r);
 					elements[count] = r;
 					break;
 				case 's':
-					var s = new Snake(new(x, y), c);
+					var s = new Snake(new(y, x), c);
 					enemies.Add(s);
 					elements[count] = s;
 					break;

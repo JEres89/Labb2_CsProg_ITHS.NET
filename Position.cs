@@ -105,7 +105,7 @@ internal class Position
 
 	internal Position GetDirection(int y, int x, int distance)
 	{
-		Position direction = GetDirection(x, y);
+		Position direction = GetDirection(y, x);
 		direction.X = direction.X > 0 ? Math.Min(direction.X, distance) : Math.Max(direction.X, -distance);
 		direction.Y = direction.Y > 0 ? Math.Min(direction.Y, distance) : Math.Max(direction.Y, -distance);
 		return direction;
