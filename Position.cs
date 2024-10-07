@@ -10,7 +10,7 @@ namespace Labb2_CsProg_ITHS.NET;
 /// <summary>
 /// Note: The order of the X and Y values are reversed from the usual (X, Y) to (Y, X) to match the order of 2D arrays.
 /// </summary>
-internal class Position
+internal record struct Position
 {
 	internal int X { get; set; }
 	internal int Y { get; set; }
@@ -75,7 +75,7 @@ internal class Position
 
 	internal int Distance(Position position)
 	{
-		return Distance(position.X, position.Y);
+		return Distance(position.Y, position.X);
 	}
 
 	internal int Distance(int y, int x)

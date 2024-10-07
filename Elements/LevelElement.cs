@@ -32,6 +32,11 @@ internal abstract class LevelElement
 		Status,     //Causes a passive lingering effect on the instigator
 	}
 
+	internal static (char c, ConsoleColor fg, ConsoleColor bg) GetEmptyRenderData(bool isDiscovered, bool isInView)
+	{
+		return (' ', ConsoleColor.Black, isDiscovered ? isInView ? BackroundVisibleEmpty : BackroundDiscoveredEmpty : ConsoleColor.Black);
+	}
+
 	public static ConsoleColor BackroundVisibleEmpty { get; } = ConsoleColor.Gray;
 	public static ConsoleColor BackroundDiscoveredEmpty { get; } = ConsoleColor.DarkGray;
 }

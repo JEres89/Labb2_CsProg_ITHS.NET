@@ -10,7 +10,7 @@ internal class Renderer
 	public static Renderer Instance { get; private set; } = new();
 	private Renderer() { }
 
-	private readonly Queue<((int y, int x) pos, (char c, ConsoleColor fg, ConsoleColor bg) gfx)> _mapUpdateQueue = new();
+	private readonly Queue<(Position, (char c, ConsoleColor fg, ConsoleColor bg) gfx)> _mapUpdateQueue = new();
 	private readonly Queue<((int y, int x) pos, (string s, ConsoleColor fg, ConsoleColor bg) gfx)> _uiUpdateQueue = new();
 	private readonly List<string> _log = new();
 	private readonly Queue<string> _logUpdateQueue = new();
@@ -50,7 +50,7 @@ internal class Renderer
 		while (_mapUpdateQueue.TryDequeue(out var data))
 		{
 			var (pos, gfx) = data;
-			Console.SetCursorPosition(pos.x+MapXoffset, pos.y+MapYoffset);
+			Console.SetCursorPosition(pos.X+MapXoffset, pos.Y+MapYoffset);
 			Console.ForegroundColor = gfx.fg;
 			Console.BackgroundColor = gfx.bg;
 			Console.Write(gfx.c);
@@ -114,17 +114,17 @@ internal class Renderer
 		MapWidth = width;
 	}
 
-	internal void AddMapUpdate(((int y, int x) pos, (char c, ConsoleColor fg, ConsoleColor bg) gfx) renderData)
+	internal void AddMapUpdate((Position pos, (char c, ConsoleColor fg, ConsoleColor bg) gfx) renderData)
 	{
-		_mapUpdateQueue.Append(renderData);
+		_mapUpdateQueue.Enqueue(renderData);
 	}
-	internal void AddMapUpdate(Dictionary<(int y, int x), (char c, ConsoleColor fg, ConsoleColor bg)> renderData)
-	{
-		foreach (var item in renderData)
-		{
-			_mapUpdateQueue.Enqueue((item.Key, item.Value));
-		}
-	}
+	//internal void AddMapUpdate(Queue<(Position, (char c, ConsoleColor fg, ConsoleColor bg))> renderData)
+	//{
+	//	foreach (var item in renderData)
+	//	{
+	//		_mapUpdateQueue.Enqueue(item);
+	//	}
+	//}
 	internal void AddUiUpdate(((int y, int x) pos, (string s, ConsoleColor fg, ConsoleColor bg) gfx) renderData)
 	{
 		_uiUpdateQueue.Enqueue(renderData);

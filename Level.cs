@@ -17,10 +17,11 @@ internal class Level
 
 	private LevelElement?[,] _elements;
 	private bool[,] _discovered;
-	private Dictionary<(int y,int x),bool> _playerView = new();
+	private HashSet<Position> _playerView = new();
 	private List<LevelEntity> _enemies;
 	private List<Position> _updateQueue = new();
-	private Dictionary<(int y, int x), (char c, ConsoleColor fg, ConsoleColor bg)> _renderQueue = new();
+	//private Queue<((int y, int x), (char c, ConsoleColor fg, ConsoleColor bg))> _renderQueue = new();
+	//private Queue<(Position, (char c, ConsoleColor fg, ConsoleColor bg))> _renderQueuePos = new();
 
 	internal Level(ReadOnlySpan2D<LevelElement?> levelData, List<LevelEntity> enemies, PlayerEntity player)
 	{
@@ -40,63 +41,108 @@ internal class Level
 	{
 		UpdateDiscoveredAndPlayerView(false);
 		RenderAll();
-		FlushToRenderer();
+		//FlushToRenderer();
 	}
 	private void UpdateDiscoveredAndPlayerView(bool render)
 	{
 		var viewRange = Player.ViewRange;
-		var pos = Player.Pos;
+		var pPos = Player.Pos;
 
-		if(render)
+		//if(render)
+		//{
+		//	var toRemove = new List<Position>();
+		//	foreach (var vPos in _playerView)
+		//	{
+		//		if (pPos.Distance(vPos) <= viewRange)
+		//		{
+		//			continue;
+		//		}
+		//		_renderQueue.Enqueue((vPos.ToTuple(),_elements[vPos.Y, vPos.X]?.GetRenderData(true, false) ?? LevelElement.GetEmptyRenderData(true, false)));
+		//		_renderQueuePos.Enqueue((vPos, _elements[vPos.Y, vPos.X]?.GetRenderData(true, false) ?? LevelElement.GetEmptyRenderData(true, false)));
+		//		toRemove.Add(vPos);
+		//	}
+		//	foreach (var item in toRemove)
+		//	{
+		//		_playerView.Remove(item);
+		//	}
+		//}
+		//else
+		//{
+		//	_playerView.Clear();
+		//}
+		var toRemove = _playerView;
+		_playerView = new();
+
+		for (int y = Math.Max((pPos.Y - viewRange), 0); y <= Math.Min((pPos.Y + viewRange), Height); y++)
 		{
-			var toRemove = new List<(int y, int x)>();
-			foreach (var item in _playerView)
+			for (int x = Math.Max((pPos.X - viewRange), 0); x <= Math.Min((pPos.X + viewRange), Width); x++)
 			{
-				if (pos.Distance(item.Key.y, item.Key.x) <= viewRange)
+				//bool inView = false;
+				LevelElement? levelElement = _elements[y, x];
+				Position vPos = levelElement?.Pos ?? new(y,x);
+				
+				if (render && toRemove.Contains(vPos))
 				{
+					toRemove.Remove(vPos);
+					_playerView.Add(vPos);
 					continue;
 				}
-				_renderQueue[item.Key] = _elements[item.Key.y, item.Key.x]?.GetRenderData(true, false) ?? (' ', ConsoleColor.Black, ConsoleColor.DarkGray);
-				toRemove.Add(item.Key);
-			}
-			foreach (var item in toRemove)
-			{
-				_playerView.Remove(item);
-			}
-		}
-		else
-		{
-			_playerView.Clear();
-		}
-
-		for (int y = Math.Max((pos.Y - viewRange), 0); y <= Math.Min((pos.Y + viewRange), Height); y++)
-		{
-			for (int x = Math.Max((pos.X - viewRange), 0); x <= Math.Min((pos.X + viewRange), Width); x++)
-			{
-				if(_playerView.ContainsKey((y, x)))
+				if (pPos.Distance(vPos) <= viewRange)
 				{
-					continue;
-				}
-				if (pos.Distance(y, x) <= viewRange)
-				{
-					_playerView[(y, x)] = true;
+					_playerView.Add(vPos);
 					_discovered[y, x] = true;
 					if (render)
 					{
-						_renderQueue[(y, x)] = _elements[y, x]?.GetRenderData(true, true) ?? (' ', ConsoleColor.Black, ConsoleColor.Black);
+						//_renderQueue.Enqueue((vPos.ToTuple(), levelElement?.GetRenderData(true, true) ?? LevelElement.GetEmptyRenderData(true, true)));
+						Renderer.Instance.AddMapUpdate((vPos, levelElement?.GetRenderData(true, true) ?? LevelElement.GetEmptyRenderData(true, true)));
 					}
 				}
 			}
 		}
+		if (render)
+		{
+			foreach (var dPos in toRemove)
+			{
+				//_renderQueue.Enqueue((dPos.ToTuple(), _elements[dPos.Y, dPos.X]?.GetRenderData(true, false) ?? LevelElement.GetEmptyRenderData(true, false)));
+				Renderer.Instance.AddMapUpdate((dPos, _elements[dPos.Y, dPos.X]?.GetRenderData(true, false) ?? LevelElement.GetEmptyRenderData(true, false)));
+			}
+		}
+
+
+		//for (int y = Math.Max((pPos.Y - viewRange), 0); y <= Math.Min((pPos.Y + viewRange), Height); y++)
+		//{
+		//	for (int x = Math.Max((pPos.X - viewRange), 0); x <= Math.Min((pPos.X + viewRange), Width); x++)
+		//	{
+		//		bool inView = false;
+		//		LevelElement? levelElement = _elements[y, x];
+		//		Position? vPos = levelElement?.Pos ?? (render ? _playerView.FirstOrDefault(p => inView = (p.Y == y && p.X == x)) : null);
+		//		if (inView)
+		//		{
+		//			continue;
+		//		}
+		//		if (pPos.Distance(y, x) <= viewRange)
+		//		{
+		//			vPos ??= new Position(y, x);
+
+		//			_playerView.Add(vPos);
+		//			_discovered[y, x] = true;
+		//			if (render)
+		//			{
+		//				_renderQueue.Enqueue((vPos.ToTuple(), levelElement?.GetRenderData(true, false) ?? LevelElement.GetEmptyRenderData(true, false)));
+		//				_renderQueuePos.Enqueue((vPos, levelElement?.GetRenderData(true, false) ?? LevelElement.GetEmptyRenderData(true, false)));
+		//			}
+		//		}
+		//	}
+		//}
 	}
 	internal void ReRender()
 	{
+		UpdateDiscoveredAndPlayerView(false);
 		RenderAll();
-		FlushToRenderer();
 	}
 	internal void RenderAll()
 	{
-		_renderQueue.Clear();
+		//_renderQueue.Clear();
 		for (int y = 0; y < Height; y++)
 		{
 			for (int x = 0; x < Width; x++)
@@ -104,23 +150,29 @@ internal class Level
 				if (_discovered[y,x])
 				{
 					var e = _elements[y,x];
+
 					if (e != null)
 					{
-						_renderQueue[e.Pos.ToTuple()] = e.GetRenderData(true, _playerView.ContainsKey((e.Pos.Y, e.Pos.X)));
+						//_renderQueue.Enqueue(((y, x), e.GetRenderData(true, _playerView.Contains(e.Pos))));
+						Renderer.Instance.AddMapUpdate((e.Pos, e.GetRenderData(true, _playerView.Contains(e.Pos))));
+
 					}
 					else
 					{
-						_renderQueue[(y, x)] = (' ', ConsoleColor.Black, _playerView.ContainsKey((y, x)) ? LevelElement.BackroundVisibleEmpty : LevelElement.BackroundDiscoveredEmpty);
+						Position pos = new(y, x);
+						//_renderQueue.Enqueue(((y, x), LevelElement.GetEmptyRenderData(true, _playerView.Contains(e.Pos))));
+						Renderer.Instance.AddMapUpdate((pos, LevelElement.GetEmptyRenderData(true, _playerView.Contains(pos))));
 					}
 				}
 			}
 		}
 	}
-	private void FlushToRenderer()
-	{
-		Renderer.Instance.AddMapUpdate(_renderQueue);
-		_renderQueue.Clear();
-	}
+	//private void FlushToRenderer()
+	//{
+	//	Renderer.Instance.AddMapUpdate(_renderQueuePos);
+	//	_renderQueue.Clear();
+	//	_renderQueuePos.Clear();
+	//}
 	internal void Update()
 	{
 		List<LevelElement> movedElements= new();
@@ -158,7 +210,6 @@ internal class Level
 	{
 		throw new NotImplementedException();
 	}
-
 
 	public override string ToString()
 	{
