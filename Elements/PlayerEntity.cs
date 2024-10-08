@@ -8,6 +8,8 @@ using static Labb2_CsProg_ITHS.NET.Elements.LevelEntity;
 namespace Labb2_CsProg_ITHS.NET.Elements;
 internal class PlayerEntity : LevelEntity, IInputEndpoint
 {
+    public bool WillAct { get; set; }
+	private ConsoleKeyInfo pressedKey;
 	public PlayerEntity(Position p, char symbol) : base(p, symbol)
 	{
 		Name = "";
@@ -18,38 +20,135 @@ internal class PlayerEntity : LevelEntity, IInputEndpoint
 	{
 		Name = name;
 	}
-	internal override Interaction Collide(LevelElement element)
-	{
-		switch (element)
-		{
-			case LevelEntity entity:
-				var al = entity.GetAllegiance(this);
-				return relationships[al];
-			case Wall wall:
-				return Interaction.Move;
-			default:
-				return Interaction.Block;
-		}
-	}
 
-	
-	internal override Allegiance GetAllegiance(LevelEntity entity)
-	{
-		throw new NotImplementedException();
-	}
 
 	internal override (char c, ConsoleColor fg, ConsoleColor bg) GetRenderData(bool isDiscovered, bool isInView)
 	{
-		return (Symbol, ConsoleColor.White, ConsoleColor.Black);
+		return (Symbol, ConsoleColor.Blue, ConsoleColor.Gray);
 	}
 
 	internal override void Update(Level CurrentLevel)
 	{
-		throw new NotImplementedException();
+		WillAct = false;
+		Position direction = pressedKey.Key switch
+		{
+			ConsoleKey.A or ConsoleKey.LeftArrow => Position.Left,
+			ConsoleKey.W or ConsoleKey.UpArrow => Position.Up,
+			ConsoleKey.D or ConsoleKey.RightArrow => Position.Right,
+			ConsoleKey.S or ConsoleKey.DownArrow => Position.Down,
+			_ => default
+		};
+
+		if (direction == default)
+		{
+			HasMoved = false;
+		}
+		else
+		{
+			HasMoved = Act(CurrentLevel, direction);
+		}
+		pressedKey = default;
 	}
 
-	void IInputEndpoint.KeyPressed(ConsoleKeyInfo key)
+	private bool Act(Level CurrentLevel, Position direction)
 	{
-		throw new NotImplementedException();
+		LevelElement? collisionTarget;
+		if (CurrentLevel.TryMove(this, direction, out collisionTarget))
+		{
+			Pos = Pos.Move(direction);
+			return true;
+		}
+		else
+		{
+			if (ActsIfCollide(collisionTarget, out var reaction))
+			{
+				switch (reaction)
+				{
+					case Reactions.Block:
+						break;
+
+					case Reactions.Aggressive:
+						if (collisionTarget is LevelEntity entity)
+						{
+							var attack = CombatProvider.Attack(this, entity);
+							var counter = entity.Attack(this, attack);
+							Health -= counter.damage;
+							Renderer.Instance.AddLogMessage(attack.GenerateCombatMessage(this, entity));
+							Renderer.Instance.AddLogMessage(counter.GenerateCombatMessage(entity, this));
+						}
+						break;
+
+					case Reactions.Move:
+						break;
+
+					case Reactions.Activate:
+						break;
+
+					case Reactions.Acquire:
+						break;
+
+					case Reactions.Trigger:
+						break;
+
+					case Reactions.Status:
+						break;
+
+					default:
+						break;
+				}
+				return true;
+			}
+			else
+			{
+				return false;
+			}
+		}
+	}
+	protected override bool ActsIfCollide(LevelElement element, out Reactions reaction)
+	{
+		switch (element)
+		{
+			case LevelEntity entity:
+				reaction = entity.Collide(alignment);
+				return reaction != Reactions.Block;
+
+			case Wall wall:
+				Health -= 1;
+				Renderer.Instance.AddLogMessage("You bump your nose into a wall, taking 1 damage.");
+				reaction = Reactions.Block;
+				return true;
+
+			//case Obstacle obstacle:
+
+			//	break;
+
+			default:
+				reaction = Reactions.Block;
+				return false;
+		}
+	}
+
+
+	public void KeyPressed(ConsoleKeyInfo key)
+	{
+		if(WillAct || HasMoved)
+			return;
+		else
+		{
+			WillAct = true;
+			pressedKey = key;
+		}
+	}
+
+	public void RegisterKeys(InputHandler handler)
+	{
+		handler.AddKeyListener(ConsoleKey.W, this);
+		handler.AddKeyListener(ConsoleKey.A, this);
+		handler.AddKeyListener(ConsoleKey.S, this);
+		handler.AddKeyListener(ConsoleKey.D, this);
+		handler.AddKeyListener(ConsoleKey.UpArrow, this);
+		handler.AddKeyListener(ConsoleKey.LeftArrow, this);
+		handler.AddKeyListener(ConsoleKey.DownArrow, this);
+		handler.AddKeyListener(ConsoleKey.RightArrow, this);
 	}
 }

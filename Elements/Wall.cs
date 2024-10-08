@@ -17,11 +17,6 @@ internal class Wall : LevelElement
 		Description = "A solid stone wall.";
 	}
 
-	internal override Interaction Collide(LevelElement element)
-	{
-		return Interaction.Block;
-	}
-
 	internal override void Update(Level CurrentLevel)
 	{
 		throw new NotImplementedException();
@@ -29,9 +24,14 @@ internal class Wall : LevelElement
 	internal override (char c, ConsoleColor fg, ConsoleColor bg) GetRenderData(bool isDiscovered, bool isInView)
 	{
 		char c = isDiscovered | isInView ? Symbol : ' ';
-		ConsoleColor fg = isInView ? ConsoleColor.Black : ConsoleColor.Gray;
-		ConsoleColor bg = isDiscovered ? isInView ? ConsoleColor.Gray : ConsoleColor.DarkGray : ConsoleColor.Black;
+		ConsoleColor fg = isInView ? ForegroundVisibleWall : ForegroundDiscoveredWall;
+		ConsoleColor bg = isDiscovered ? isInView ? BackroundVisibleWall : BackroundDiscoveredWall : ConsoleColor.Black;
 
 		return (c,fg,bg);
 	}
+
+	public static ConsoleColor BackroundVisibleWall { get; } = ConsoleColor.Gray;
+	public static ConsoleColor BackroundDiscoveredWall { get; } = ConsoleColor.DarkGray;
+	public static ConsoleColor ForegroundVisibleWall { get; } = ConsoleColor.Black;
+	public static ConsoleColor ForegroundDiscoveredWall { get; } = ConsoleColor.Gray;
 }

@@ -15,47 +15,42 @@ internal class Snake : LevelEntity
 		ViewRange = 1;
 	}
 
-	internal override Interaction Collide(LevelElement element)
-	{
-		throw new NotImplementedException();
-	}
-
-	internal override Allegiance GetAllegiance(LevelEntity entity)
-	{
-		throw new NotImplementedException();
-	}
-
 	internal override void Update(Level CurrentLevel)
 	{
 		if (CurrentLevel.Player.Pos.IsAdjacent(Pos))
 		{
-			if(!CurrentLevel.TryMove(this, Pos.GetDirection(CurrentLevel.Player.Pos).Invert(), out var collision))
-			{
-				var result = collision.Collide(this);
-				switch (result)
-				{
-					case Interaction.Move:
-						break;
-					case Interaction.Block:
-						break;
-					case Interaction.Aggressive:
-					case Interaction.Activate:
-					case Interaction.Acquire:
-					case Interaction.Trigger:
-					case Interaction.Status:
-					default:
+			//if(!CurrentLevel.TryMove(this, Pos.GetDirection(CurrentLevel.Player.Pos).Invert(), out var collision))
+			//{
+			//	var result = collision.ActsIfCollide(this);
+			//	switch (result)
+			//	{
+			//		case Reactions.Move:
+			//			break;
+			//		case Reactions.Block:
+			//			break;
+			//		case Reactions.Aggressive:
+			//		case Reactions.Activate:
+			//		case Reactions.Acquire:
+			//		case Reactions.Trigger:
+			//		case Reactions.Status:
+			//		default:
 
-						break;
-				}
-			}
+			//			break;
+			//	}
+			//}
 		}
 	}
+
+
 	internal override (char c, ConsoleColor fg, ConsoleColor bg) GetRenderData(bool isDiscovered, bool isInView)
 	{
+		char c = isInView ? Symbol : ' ';
+		ConsoleColor fg = isInView ? ForegroundVisibleSnake : DiscoveredSnake;
+		ConsoleColor bg = isInView ? BackroundVisibleSnake : DiscoveredSnake;
 
-		return (
-			c: isInView ? Symbol : ' ',
-			fg: isInView ? ConsoleColor.Green : ConsoleColor.White,
-			bg: isDiscovered ? isInView ? ConsoleColor.Black : ConsoleColor.DarkGray : ConsoleColor.Black);
+		return (c, fg, bg);
 	}
+	public static ConsoleColor BackroundVisibleSnake { get; } = ConsoleColor.Gray;
+	public static ConsoleColor ForegroundVisibleSnake { get; } = ConsoleColor.Green;
+	public static ConsoleColor DiscoveredSnake { get; } = ConsoleColor.DarkGray;
 }

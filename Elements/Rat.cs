@@ -13,28 +13,23 @@ internal class Rat : LevelEntity
 		Description = "A ragged, oversized, rabid rat.";
 		ViewRange = 2;
 	}
-
-	internal override Interaction Collide(LevelElement element)
-	{
-		throw new NotImplementedException();
-	}
-
-	internal override Allegiance GetAllegiance(LevelEntity entity)
-	{
-		throw new NotImplementedException();
-	}
-
-	internal override (char c, ConsoleColor fg, ConsoleColor bg) GetRenderData(bool isDiscovered, bool isInView)
-	{
-
-		return (
-			c: isInView ? Symbol:' ', 
-			fg: isInView ? ConsoleColor.Red : ConsoleColor.White, 
-			bg: isDiscovered ? isInView ? ConsoleColor.Black : ConsoleColor.DarkGray : ConsoleColor.Black);
-	}
-
 	internal override void Update(Level CurrentLevel)
 	{
 		throw new NotImplementedException();
 	}
+
+
+	internal override (char c, ConsoleColor fg, ConsoleColor bg) GetRenderData(bool isDiscovered, bool isInView)
+	{
+
+		char c = isInView ? Symbol : ' ';
+		ConsoleColor fg = isInView ? ForegroundVisibleRat : DiscoveredRat;
+		ConsoleColor bg = isInView ? BackroundVisibleRat : DiscoveredRat;
+
+		return (c, fg, bg);
+	}
+	public static ConsoleColor ForegroundVisibleRat { get; } = ConsoleColor.Red;
+	public static ConsoleColor BackroundVisibleRat { get; } = ConsoleColor.Gray;
+	public static ConsoleColor DiscoveredRat { get; } = ConsoleColor.DarkGray;
+
 }

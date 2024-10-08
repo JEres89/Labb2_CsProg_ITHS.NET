@@ -7,5 +7,7 @@ using System.Threading.Tasks;
 namespace Labb2_CsProg_ITHS.NET;
 internal interface IInputEndpoint
 {
-	internal void KeyPressed(ConsoleKeyInfo key);
+    internal void KeyPressed(ConsoleKeyInfo key);
+
+    internal void RegisterKeys(InputHandler handler);
 }

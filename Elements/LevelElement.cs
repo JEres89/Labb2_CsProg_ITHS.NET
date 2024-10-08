@@ -15,22 +15,10 @@ internal abstract class LevelElement
 
 	public static explicit operator char(LevelElement element) => element == null ? ' ' : element.Symbol;
 
-	internal abstract Interaction Collide(LevelElement element);
-
 	internal abstract void Update(Level CurrentLevel);
 
 	internal abstract (char c, ConsoleColor fg, ConsoleColor bg) GetRenderData(bool isDiscovered, bool isInView);
 
-	internal enum Interaction
-	{
-		Block,		//none, this element is not affected in any way
-		Aggressive, //is an enemy 
-		Move,		//this element will move out of the way of the element
-		Activate,   //performs a function
-		Acquire,	//this element can be obtained as an owned object
-		Trigger,	//triggers an event elsewhere
-		Status,     //Causes a passive lingering effect on the instigator
-	}
 
 	internal static (char c, ConsoleColor fg, ConsoleColor bg) GetEmptyRenderData(bool isDiscovered, bool isInView)
 	{
@@ -39,5 +27,17 @@ internal abstract class LevelElement
 
 	public static ConsoleColor BackroundVisibleEmpty { get; } = ConsoleColor.Gray;
 	public static ConsoleColor BackroundDiscoveredEmpty { get; } = ConsoleColor.DarkGray;
+
+	internal enum Reactions
+	{
+		Block,		//none, this element is not affected in any way
+		Aggressive, //is an enemy 
+		Interact,	//is a friend 
+		Move,		//this element will move out of the way of the element
+		Activate,   //performs a function
+		Acquire,	//this element can be obtained as an owned object
+		Trigger,	//triggers an event elsewhere
+		Status,     //Causes a passive lingering effect on the instigator
+	}
 }
 

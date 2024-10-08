@@ -10,81 +10,85 @@ using System.Threading.Tasks;
 namespace Labb2_CsProg_ITHS.NET;
 internal class Game
 {
-	internal static Game Instance { get; private set; }
-	internal Renderer Renderer { get; private set; }
+    internal static Game Instance { get; private set; }
+    internal Renderer Renderer { get; private set; }
 
-	private int _levelStart;
-	internal Level CurrentLevel { get; private set; }
-	internal InputHandler input = InputHandler.Instance;
+    private int _levelStart;
+    internal Level CurrentLevel { get; private set; }
+    internal InputHandler input = InputHandler.Instance;
+    internal PlayerEntity Player => CurrentLevel.Player;
 
-	public Game(int levelStart, string? player)
-	{
-		Instance = this;
-		Renderer = Renderer.Instance;
-		_levelStart = levelStart;
-		CurrentLevel = LevelReader.GetLevel(levelStart).Result;
-		CurrentLevel.Player.SetName(player??string.Empty);
-	}
+    public Game(int levelStart, string? player)
+    {
+        Instance = this;
+        Renderer = Renderer.Instance;
+        _levelStart = levelStart;
+        CurrentLevel = LevelReader.GetLevel(levelStart).Result;
+        Player.SetName(player ?? string.Empty);
+    }
 
-	public void GameStart()
-	{
-		Initialize();
+    public void GameStart()
+    {
+        Initialize();
 
-		input.InputListener = Task.Run(input.Start);
-		GameLoop();
-	}
+        GameLoop();
+    }
 
-	// PlayerEntity details, generate level and elements etc
-	private void Initialize()
-	{
-		if (CurrentLevel.Player.Name == string.Empty)
-		{
-			string? name = null;
-			while (string.IsNullOrEmpty(name))
-			{
-				Console.Write("Please enter your name: ");
-				name = Console.ReadLine();
-			}
-			CurrentLevel.Player.SetName(name);
-			Console.Clear();
-		}
-		Renderer.SetMapCoordinates(5, 2, CurrentLevel.Height, CurrentLevel.Width);
-		Renderer.Initialize();
-		CurrentLevel.InitMap();
-	}
+    // PlayerEntity details, generate level and elements etc
+    private void Initialize()
+    {
+        if (Player.Name == string.Empty)
+        {
+            string? name = null;
+            while (string.IsNullOrEmpty(name))
+            {
+                Console.Write("Please enter your name: ");
+                name = Console.ReadLine();
+            }
+            Player.SetName(name);
+            Console.Clear();
+        }
+        Renderer.SetMapCoordinates(5, 2, CurrentLevel.Height, CurrentLevel.Width);
+        Renderer.Initialize();
+        CurrentLevel.InitMap();
+        Player.RegisterKeys(input);
+    }
 
-	private void GameLoop()
-	{
-		int tickTime = 100;
-		Stopwatch tickTimer = new();
-		int ticks = 0;
-		while (true)
-		{
-			tickTimer.Restart();
+    private void GameLoop()
+    {
+        int tickTime = 100;
+        Stopwatch tickTimer = new();
+        int ticks = 0;
+        input.InputListener = Task.Run(input.Start);
+        while (true)
+        {
+            tickTimer.Restart();
 
-			Update();
+            Update();
 
-			if(ticks % 10 == 0)
-			{
-				Renderer.AddLogLine($"Game tick #{ticks}");
-			}
+            //if(ticks % 10 == 0)
+            //{
+            //	Renderer.AddLogLine($"Game tick #{ticks}");
+            //}
 
-			Render();
+            Render();
 
-			ticks++;
-			int timeLeft = tickTime - ((int)tickTimer.ElapsedMilliseconds);
-			if (timeLeft > 0)
-				Thread.Sleep(timeLeft);
-		}
-	}
+            ticks++;
+            int timeLeft = tickTime - (int)tickTimer.ElapsedMilliseconds;
+            if (timeLeft > 0)
+                Thread.Sleep(timeLeft);
+        }
+    }
 
-	private void Update()
-	{
+    private void Update()
+    {
+        CurrentLevel.Update();
+        //GUI.Update()
+    }
 
-	}
-
-	private void Render()
-	{
-		Renderer.Render();
-	}
+    private void Render()
+    {
+        CurrentLevel.UpdateRenderer();
+        Renderer.Render();
+    }
 }
