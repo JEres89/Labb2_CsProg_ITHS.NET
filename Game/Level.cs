@@ -54,6 +54,8 @@ internal class Level
                 LevelElement? levelElement = _elements[y, x];
                 Position vPos = levelElement?.Pos ?? new(y, x);
 
+                outOfView.Remove(vPos);
+
                 if (pPos.Distance(vPos) <= viewRange)
                 {
                     _playerView.Add(vPos);
@@ -65,7 +67,14 @@ internal class Level
                 }
             }
         }
-    }
+		if (render)
+		{
+			foreach (var dPos in outOfView)
+			{
+				_renderUpdateCoordinates.Add(dPos);
+			}
+		}
+	}
     internal void ReRender()
     {
         UpdateDiscoveredAndPlayerView(false);
