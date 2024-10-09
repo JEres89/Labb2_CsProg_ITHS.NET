@@ -1,5 +1,6 @@
 ﻿using CommunityToolkit.HighPerformance;
 using Labb2_CsProg_ITHS.NET.Elements;
+using Labb2_CsProg_ITHS.NET.Game;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
@@ -35,7 +36,7 @@ internal static class LevelReader
 		using FileStream fileStream = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.Read, bufferSize: 1024, useAsync: true);
 		var length = fileStream.Length;
 
-		if(length > 81920) // MaxShadowBufferSize
+		if (length > 81920) // MaxShadowBufferSize
 		{
 			var queue = new ConcurrentQueue<byte[]>();
 			Task t = QueueFileChunks(fileStream, queue);
@@ -56,7 +57,7 @@ internal static class LevelReader
 		{
 			yield return buffer;
 			buffer = new byte[255];
-            Console.WriteLine("Fileposition: "+fileStream.Position);
+			Console.WriteLine("Fileposition: " + fileStream.Position);
 		}
 
 	}
@@ -74,7 +75,7 @@ internal static class LevelReader
 		int emptyRows = 0;
 		int count = 0;
 
-		while(count < length)
+		while (count < length)
 		{
 			await foreach (var chunk in stream)
 			{
@@ -85,7 +86,7 @@ internal static class LevelReader
 		if (p == null)
 			throw new InvalidDataException("No player in level data");
 
-		return new(new(elements, 0, y-emptyRows, width - leastEmptyTiles, leastEmptyTiles), enemies, p);
+		return new(new(elements, 0, y - emptyRows, width - leastEmptyTiles, leastEmptyTiles), enemies, p);
 	}
 
 	private static void ParseChunk(byte[] chunk, int length, LevelElement?[] elements, List<LevelEntity> enemies, ref PlayerEntity? p, ref int y, ref int x, ref int width, ref int emptyTiles, ref int leastEmptyTiles, ref int emptyRows, ref int count)
@@ -152,28 +153,18 @@ internal static class LevelReader
 			count++;
 		}
 	}
-	//static void AnonParam()
-	//{
-	//	var typ = new { Name = "John", Age = 18 };
-	//	TryTyp(typ, t => $"{t.Name} är {t.Age}");
-	//}
-
-	//static void TryTyp<T>(T typ, Func<T, string> toString)
-	//{
-	//		Console.WriteLine(toString(typ));
-	//}
 
 	private static async Task QueueFileChunks(FileStream fileStream, ConcurrentQueue<byte[]> queue)
 	{
 		int numRead = 0;
-		int bytesRead=-1;
+		int bytesRead = -1;
 		while (bytesRead != 0)
 		{
 			fileStream.ReadByte();
 			byte[] buffer = new byte[1024];
 			bytesRead = await fileStream.ReadAsync(buffer, 0, 1024);
 			numRead++;
-            Console.WriteLine($"{DateTime.Now.Ticks}: copying to stream {numRead} times");
+			Console.WriteLine($"{DateTime.Now.Ticks}: copying to stream {numRead} times");
 			queue.Enqueue(buffer);
 			//await Task.Delay(10);
 		}
@@ -195,7 +186,7 @@ internal static class LevelReader
 
 		while (!source.IsCompleted || queue.Count > 0)
 		{
-			if(!queue.TryDequeue(out var chunk))
+			if (!queue.TryDequeue(out var chunk))
 			{
 				delayCount++;
 				await Task.Delay(10);
@@ -209,7 +200,7 @@ internal static class LevelReader
 			//Console.WriteLine($"{DateTime.Now.Ticks}: Processed queue count: {count}");
 		}
 
-		if(p == null)
+		if (p == null)
 			throw new InvalidDataException("No player in level data");
 
 		return new(new(elements, 0, y - emptyRows, width - leastEmptyTiles, leastEmptyTiles), enemies, p);

@@ -3,8 +3,9 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using Labb2_CsProg_ITHS.NET.Game;
 
-namespace Labb2_CsProg_ITHS.NET;
+namespace Labb2_CsProg_ITHS.NET.Backend;
 internal class Renderer
 {
     public static Renderer Instance { get; private set; } = new();
@@ -17,10 +18,9 @@ internal class Renderer
 
 
     public int MapXoffset { get; set; }
-	public int MapYoffset { get ; set; }
+    public int MapYoffset { get; set; }
     public int MapWidth { get; set; }
     public int MapHeight { get; set; }
-    //public int LogLength { get; set; }
     private int logWidth => bufferWidth - MapXoffset - MapWidth;
     private int logHeight = 0;
 
@@ -50,7 +50,7 @@ internal class Renderer
         while (_mapUpdateQueue.TryDequeue(out var data))
         {
             var (pos, gfx) = data;
-			Console.SetCursorPosition(pos.X+MapXoffset, pos.Y+MapYoffset);
+            Console.SetCursorPosition(pos.X + MapXoffset, pos.Y + MapYoffset);
             Console.ForegroundColor = gfx.fg;
             Console.BackgroundColor = gfx.bg;
             Console.Write(gfx.c);
@@ -79,14 +79,14 @@ internal class Renderer
             _log.Add(line);
             var lineChars = 0;
 
-			while(lineChars < line.Length)
+            while (lineChars < line.Length)
             {
-				int takeChars = Math.Min(logWidth, line.Length-lineChars);
+                int takeChars = Math.Min(logWidth, line.Length - lineChars);
                 logLines.Add(line.Substring(lineChars, takeChars));
                 lineChars += takeChars;
             }
         }
-		if(logLines.Count > bufferHeight)
+        if (logLines.Count > bufferHeight)
         {
             logLines.RemoveRange(0, logLines.Count - bufferHeight);
         }
@@ -94,7 +94,7 @@ internal class Renderer
         int logOverflow = logHeight + logLines.Count - bufferHeight;
         if (logOverflow > 0)
         {
-			Console.MoveBufferArea(logStartX, logOverflow, logWidth, logHeight-logOverflow, logStartX, 0);
+            Console.MoveBufferArea(logStartX, logOverflow, logWidth, logHeight - logOverflow, logStartX, 0);
             logHeight -= logOverflow;
         }
         Console.ForegroundColor = ConsoleColor.White;
@@ -118,13 +118,7 @@ internal class Renderer
     {
         _mapUpdateQueue.Enqueue(renderData);
     }
-    //internal void AddMapUpdate(Queue<(Position, (char c, ConsoleColor fg, ConsoleColor bg))> renderData)
-    //{
-    //	foreach (var item in renderData)
-    //	{
-    //		_mapUpdateQueue.Enqueue(item);
-    //	}
-    //}
+
     internal void AddUiUpdate(((int y, int x) pos, (string s, ConsoleColor fg, ConsoleColor bg) gfx) renderData)
     {
         _uiUpdateQueue.Enqueue(renderData);
@@ -161,9 +155,9 @@ internal class Renderer
             bufferWidth = Console.WindowWidth;
             bufferHeight = Console.WindowHeight;
         }
-        Game.Instance.CurrentLevel.ReRender();
+        GameLoop.Instance.CurrentLevel.ReRender();
         logHeight = 0;
-		 _log[Math.Max(_log.Count-bufferHeight, 0)..].ForEach(s => AddLogLine(s));
+        _log[Math.Max(_log.Count - bufferHeight, 0)..].ForEach(s => AddLogLine(s));
     }
 
     private void PauseMessage(string reason)
@@ -174,7 +168,7 @@ internal class Renderer
         string pause = "GAME IS PAUSED";
         Console.SetCursorPosition(Math.Max((width - pause.Length) / 2, 0), height / 2 - 1);
         Console.Write(pause);
-		Console.SetCursorPosition(Math.Max((width - reason.Length) / 2,0), height / 2 + 1);
+        Console.SetCursorPosition(Math.Max((width - reason.Length) / 2, 0), height / 2 + 1);
         Console.Write(reason);
         string resume = "Press any key to resume";
         Console.SetCursorPosition(Math.Max((width - resume.Length) / 2, 0), height / 2 + 3);

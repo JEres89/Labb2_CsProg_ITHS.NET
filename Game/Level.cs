@@ -1,4 +1,5 @@
 ﻿using CommunityToolkit.HighPerformance;
+using Labb2_CsProg_ITHS.NET.Backend;
 using Labb2_CsProg_ITHS.NET.Elements;
 using System;
 using System.Collections.Generic;
@@ -7,7 +8,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace Labb2_CsProg_ITHS.NET;
+namespace Labb2_CsProg_ITHS.NET.Game;
 internal class Level
 {
     public int Width { get; private set; }
@@ -31,8 +32,6 @@ internal class Level
         _enemies = enemies;
 
         Player = player;
-
-        //ParseLevel(levelData);
     }
 
     internal void InitMap()
@@ -53,33 +52,17 @@ internal class Level
             for (int x = Math.Max(pPos.X - viewRange, 0); x <= Math.Min(pPos.X + viewRange, Width); x++)
             {
                 LevelElement? levelElement = _elements[y, x];
-				Position vPos = levelElement?.Pos ?? new(y,x);
+                Position vPos = levelElement?.Pos ?? new(y, x);
 
-                //if (render && pPos.Distance(vPos) <= viewRange)
-                //{
-                //    outOfView.Remove(vPos);
-                //    _playerView.Add(vPos);
-                //    continue;
-                //}
                 if (pPos.Distance(vPos) <= viewRange)
                 {
-                    outOfView.Remove(vPos);
                     _playerView.Add(vPos);
                     _discovered[y, x] = true;
-                    if (render)
-                    {
-                        _renderUpdateCoordinates.Add(vPos);
-                        //Renderer.Instance.AddMapUpdate((vPos, levelElement?.GetRenderData(true, true) ?? LevelElement.GetEmptyRenderData(true, true)));
-                    }
                 }
-            }
-        }
-        if (render)
-        {
-            foreach (var dPos in outOfView)
-            {
-                _renderUpdateCoordinates.Add(dPos);
-                //Renderer.Instance.AddMapUpdate((dPos, _elements[dPos.Y, dPos.X]?.GetRenderData(true, false) ?? LevelElement.GetEmptyRenderData(true, false)));
+                if (render)
+                {
+                    _renderUpdateCoordinates.Add(vPos);
+                }
             }
         }
     }
@@ -189,7 +172,7 @@ internal class Level
             for (int x = 0; x < Width; x++)
             {
 
-				sb.Append(span[y,x]);
+                sb.Append(span[y, x]);
             }
             //sb.Append('|');
             sb.AppendLine();

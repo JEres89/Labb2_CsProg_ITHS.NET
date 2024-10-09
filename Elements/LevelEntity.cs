@@ -3,23 +3,24 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-using static Labb2_CsProg_ITHS.NET.CombatProvider;
+using Labb2_CsProg_ITHS.NET.Game;
+using static Labb2_CsProg_ITHS.NET.Game.CombatProvider;
 
 namespace Labb2_CsProg_ITHS.NET.Elements;
 internal abstract class LevelEntity : LevelElement
 {
-    public int ViewRange { get; protected set; }
-    public int Health { get; protected set; }
-    public int AttackDieSize { get; protected set; }
-    public int AttackDieNum { get; protected set; }
-    public int AttackMod { get; protected set; }
-    public int DefenseDieSize { get; protected set; }
-    public int DefenseDieNum { get; protected set; }
-    public int DefenseMod { get; protected set; }
+	public int ViewRange { get; protected set; }
+	public int Health { get; protected set; }
+	public int AttackDieSize { get; protected set; }
+	public int AttackDieNum { get; protected set; }
+	public int AttackMod { get; protected set; }
+	public int DefenseDieSize { get; protected set; }
+	public int DefenseDieNum { get; protected set; }
+	public int DefenseMod { get; protected set; }
 
-    public bool HasMoved { get; set; }
-    protected readonly Alignment alignment;
-    internal LevelEntity(Position p, char symbol)
+	public bool HasMoved { get; set; }
+	protected readonly Alignment alignment;
+	internal LevelEntity(Position p, char symbol)
 	{
 		Pos = p;
 		Symbol = symbol;

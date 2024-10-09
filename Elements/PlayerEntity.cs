@@ -3,12 +3,13 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-using static Labb2_CsProg_ITHS.NET.Elements.LevelEntity;
+using Labb2_CsProg_ITHS.NET.Backend;
+using Labb2_CsProg_ITHS.NET.Game;
 
 namespace Labb2_CsProg_ITHS.NET.Elements;
 internal class PlayerEntity : LevelEntity, IInputEndpoint
 {
-    public bool WillAct { get; set; }
+	public bool WillAct { get; set; }
 	private ConsoleKeyInfo pressedKey;
 	public PlayerEntity(Position p, char symbol) : base(p, symbol)
 	{
@@ -21,11 +22,6 @@ internal class PlayerEntity : LevelEntity, IInputEndpoint
 		Name = name;
 	}
 
-
-	internal override (char c, ConsoleColor fg, ConsoleColor bg) GetRenderData(bool isDiscovered, bool isInView)
-	{
-		return (Symbol, ConsoleColor.Blue, ConsoleColor.Gray);
-	}
 
 	internal override void Update(Level CurrentLevel)
 	{
@@ -129,9 +125,15 @@ internal class PlayerEntity : LevelEntity, IInputEndpoint
 	}
 
 
+
+	internal override (char c, ConsoleColor fg, ConsoleColor bg) GetRenderData(bool isDiscovered, bool isInView)
+	{
+		return (Symbol, ConsoleColor.Blue, ConsoleColor.Gray);
+	}
+
 	public void KeyPressed(ConsoleKeyInfo key)
 	{
-		if(WillAct || HasMoved)
+		if (WillAct || HasMoved)
 			return;
 		else
 		{

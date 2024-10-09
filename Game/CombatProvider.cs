@@ -5,7 +5,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace Labb2_CsProg_ITHS.NET;
+namespace Labb2_CsProg_ITHS.NET.Game;
 internal static class CombatProvider
 {
 

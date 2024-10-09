@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-using static Labb2_CsProg_ITHS.NET.Game;
+using Labb2_CsProg_ITHS.NET.Game;
 
 namespace Labb2_CsProg_ITHS.NET.Elements;
 internal class Snake : LevelEntity

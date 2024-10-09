@@ -1,4 +1,5 @@
-﻿using Labb2_CsProg_ITHS.NET.Elements;
+﻿using Labb2_CsProg_ITHS.NET.Backend;
+using Labb2_CsProg_ITHS.NET.Elements;
 using Labb2_CsProg_ITHS.NET.Files;
 using System;
 using System.Collections.Generic;
@@ -7,10 +8,10 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace Labb2_CsProg_ITHS.NET;
-internal class Game
+namespace Labb2_CsProg_ITHS.NET.Game;
+internal class GameLoop
 {
-    internal static Game Instance { get; private set; }
+    internal static GameLoop Instance { get; private set; }
     internal Renderer Renderer { get; private set; }
 
     private int _levelStart;
@@ -18,7 +19,7 @@ internal class Game
     internal InputHandler input = InputHandler.Instance;
     internal PlayerEntity Player => CurrentLevel.Player;
 
-    public Game(int levelStart, string? player)
+    public GameLoop(int levelStart, string? player)
     {
         Instance = this;
         Renderer = Renderer.Instance;
@@ -31,7 +32,7 @@ internal class Game
     {
         Initialize();
 
-        GameLoop();
+        Loop();
     }
 
     // PlayerEntity details, generate level and elements etc
@@ -54,7 +55,7 @@ internal class Game
         Player.RegisterKeys(input);
     }
 
-    private void GameLoop()
+    private void Loop()
     {
         int tickTime = 100;
         Stopwatch tickTimer = new();
@@ -68,7 +69,7 @@ internal class Game
 
             //if(ticks % 10 == 0)
             //{
-            //	Renderer.AddLogLine($"Game tick #{ticks}");
+            //	Renderer.AddLogLine($"Loop tick #{ticks}");
             //}
 
             Render();

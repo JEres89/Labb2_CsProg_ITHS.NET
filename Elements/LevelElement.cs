@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using Labb2_CsProg_ITHS.NET.Game;
 
 namespace Labb2_CsProg_ITHS.NET.Elements;
 internal abstract class LevelElement
@@ -17,9 +18,9 @@ internal abstract class LevelElement
 
 	internal abstract void Update(Level CurrentLevel);
 
+
+
 	internal abstract (char c, ConsoleColor fg, ConsoleColor bg) GetRenderData(bool isDiscovered, bool isInView);
-
-
 	internal static (char c, ConsoleColor fg, ConsoleColor bg) GetEmptyRenderData(bool isDiscovered, bool isInView)
 	{
 		return (' ', ConsoleColor.Black, isDiscovered ? isInView ? BackroundVisibleEmpty : BackroundDiscoveredEmpty : ConsoleColor.Black);
@@ -30,13 +31,13 @@ internal abstract class LevelElement
 
 	internal enum Reactions
 	{
-		Block,		//none, this element is not affected in any way
+		Block,      //none, this element is not affected in any way
 		Aggressive, //is an enemy 
-		Interact,	//is a friend 
-		Move,		//this element will move out of the way of the element
+		Interact,   //is a friend 
+		Move,       //this element will move out of the way of the element
 		Activate,   //performs a function
-		Acquire,	//this element can be obtained as an owned object
-		Trigger,	//triggers an event elsewhere
+		Acquire,    //this element can be obtained as an owned object
+		Trigger,    //triggers an event elsewhere
 		Status,     //Causes a passive lingering effect on the instigator
 	}
 }

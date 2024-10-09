@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using Labb2_CsProg_ITHS.NET.Game;
 
 namespace Labb2_CsProg_ITHS.NET.Elements;
 
@@ -21,13 +22,16 @@ internal class Wall : LevelElement
 	{
 		throw new NotImplementedException();
 	}
+
+
+
 	internal override (char c, ConsoleColor fg, ConsoleColor bg) GetRenderData(bool isDiscovered, bool isInView)
 	{
 		char c = isDiscovered | isInView ? Symbol : ' ';
 		ConsoleColor fg = isInView ? ForegroundVisibleWall : ForegroundDiscoveredWall;
 		ConsoleColor bg = isDiscovered ? isInView ? BackroundVisibleWall : BackroundDiscoveredWall : ConsoleColor.Black;
 
-		return (c,fg,bg);
+		return (c, fg, bg);
 	}
 
 	public static ConsoleColor BackroundVisibleWall { get; } = ConsoleColor.Gray;
