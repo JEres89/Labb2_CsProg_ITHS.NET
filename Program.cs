@@ -1,4 +1,5 @@
 ﻿using Labb2_CsProg_ITHS.NET.Files;
+using Labb2_CsProg_ITHS.NET.Game;
 
 namespace Labb2_CsProg_ITHS.NET;
 
@@ -6,16 +7,15 @@ internal class Program
 {
 	static void Main(string[] args)
 	{
-		var level = LevelReader.ReadLevel(".\\Levels\\Level1.txt");
+		ResetConsoleColors();
+		var game = new GameLoop(1, null);
+		game.GameStart();
 
-		//int i = 0;
-		//while (!level.IsCompleted)
-		//{
-		//	i++;
-  //          Console.WriteLine($"{DateTime.Now.Ticks}: Doing things while the level is construction {i} times");
-		//	Thread.Sleep(100);
-		//}
 
-		//Console.WriteLine(level.Result);
+	}
+	public static void ResetConsoleColors()
+	{
+		Console.BackgroundColor = ConsoleColor.Black;
+		Console.ForegroundColor = ConsoleColor.White;
 	}
 }
