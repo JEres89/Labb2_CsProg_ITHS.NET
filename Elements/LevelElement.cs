@@ -13,8 +13,9 @@ internal abstract class LevelElement
 	public string Name { get; protected set; }
 	public string Description { get; protected set; }
 
+    public bool ObscuresVision { get; protected set; } = false;
 
-	public static explicit operator char(LevelElement element) => element == null ? ' ' : element.Symbol;
+    public static explicit operator char(LevelElement element) => element == null ? ' ' : element.Symbol;
 
 	internal abstract void Update(Level CurrentLevel);
 

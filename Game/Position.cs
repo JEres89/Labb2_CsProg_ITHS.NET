@@ -12,8 +12,8 @@ namespace Labb2_CsProg_ITHS.NET.Game;
 /// </summary>
 internal record struct Position
 {
-    internal int X { get; set; }
     internal int Y { get; set; }
+    internal int X { get; set; }
 
     internal static Position Up = new(-1, 0);
     internal static Position Left = new(0, -1);
@@ -22,14 +22,14 @@ internal record struct Position
 
     internal Position(int y, int x)
     {
-        X = x;
         Y = y;
+        X = x;
     }
 
     internal Position(Position position)
     {
-        X = position.X;
         Y = position.Y;
+        X = position.X;
     }
 
     internal (int, int) ToTuple() => (Y, X);

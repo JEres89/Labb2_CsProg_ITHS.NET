@@ -1,7 +1,9 @@
 ﻿using CommunityToolkit.HighPerformance;
 using Labb2_CsProg_ITHS.NET.Backend;
 using Labb2_CsProg_ITHS.NET.Elements;
+using Microsoft.VisualBasic;
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq;
@@ -15,8 +17,9 @@ internal class Level
     public int Height { get; private set; }
 
     public PlayerEntity Player { get; private set; }
+    internal Renderer Renderer => Renderer.Instance;
 
-    private LevelElement?[,] _elements;
+	private LevelElement?[,] _elements;
     private bool[,] _discovered;
     private HashSet<Position> _playerView = new();
     private List<LevelEntity> _enemies;
@@ -36,37 +39,76 @@ internal class Level
 
     internal void InitMap()
     {
-        UpdateDiscoveredAndPlayerView(false);
-        UpdateRendererAll();
+        UpdateDiscoveredAndPlayerView(true);
+        //UpdateRendererAll();
     }
     private void UpdateDiscoveredAndPlayerView(bool render)
     {
         var viewRange = Player.ViewRange;
         var pPos = Player.Pos;
 
-        var outOfView = _playerView;
+		HashSet<Position> outOfView = _playerView;
         _playerView = new();
+        HashSet<(int y,int x)> obscured = new();
+        HashSet<(int y, int x)> notObscured = new();
 
-        for (int y = Math.Max(pPos.Y - viewRange, 0); y <= Math.Min(pPos.Y + viewRange, Height); y++)
+        int yOffset = Math.Max(pPos.Y - viewRange, 0);
+        int yLength = Math.Min(pPos.Y + viewRange, Height) - yOffset;
+		int xOffset = Math.Max(pPos.X - viewRange, 0);
+        int xLength = Math.Min(pPos.X + viewRange, Width) - xOffset;
+
+        for (int col_row = 0; col_row <= 1; col_row++)
         {
-            for (int x = Math.Max(pPos.X - viewRange, 0); x <= Math.Min(pPos.X + viewRange, Width); x++)
-            {
-                LevelElement? levelElement = _elements[y, x];
-                Position vPos = levelElement?.Pos ?? new(y, x);
+            for (int y_x = 0; y_x < 2 * viewRange; y_x++)
+			{
+				int y = yOffset + y_x;
+				int x = col_row * xLength + xOffset;
+				if (yLength > y_x)
+				{
+					FindObscured(y, x, ref obscured, ref notObscured);
+				}
 
-                outOfView.Remove(vPos);
-
-                if (pPos.Distance(vPos) <= viewRange)
-                {
-                    _playerView.Add(vPos);
-                    _discovered[y, x] = true;
-                }
-                if (render)
-                {
-                    _renderUpdateCoordinates.Add(vPos);
-                }
-            }
+                if (xLength > y_x)
+				{
+					FindObscured(col_row * yLength + yOffset, y_x + xOffset, ref obscured, ref notObscured);
+				}
+			}
         }
+
+
+		//HashSet<(int y, int x)> obscured2 = new();
+		//HashSet<(int y, int x)> notObscured2 = new();
+		//for (int y = yOffset; y <= yOffset + yLength; y+= yLength)
+		//{
+		//	for (int x = xOffset; x <= xOffset + xLength; x++)
+		//	{
+		//		FindObscured(y, x, ref obscured2, ref notObscured2);
+		//	}
+		//}
+		//for (int x = xOffset; x <= xOffset + xLength; x += xLength)
+		//{
+		//	for (int y = yOffset + 1; y <= yOffset + yLength; y++)
+		//	{
+		//		FindObscured(y, x, ref obscured2, ref notObscured2);
+		//	}
+		//}
+
+		foreach (var (y,x) in notObscured)
+		{
+
+			LevelElement? levelElement = _elements[y, x];
+			Position vPos = levelElement?.Pos ?? new(y, x);
+			if (pPos.Distance(vPos) <= viewRange)
+			{
+				outOfView.Remove(vPos);
+				_playerView.Add(vPos);
+				_discovered[y, x] = true;
+			}
+			if (render)
+			{
+				_renderUpdateCoordinates.Add(vPos);
+			}
+		}
 		if (render)
 		{
 			foreach (var dPos in outOfView)
@@ -74,8 +116,71 @@ internal class Level
 				_renderUpdateCoordinates.Add(dPos);
 			}
 		}
+		//      foreach (var item in obscured)
+		//      {
+		//          Renderer.AddMapUpdate((new(item.y,item.x), ('X', ConsoleColor.Red, ConsoleColor.Black)));
+		//}
 	}
-    internal void ReRender()
+	/// <summary>
+	/// Credit goes to James McNeill at http://playtechs.blogspot.com/2007/03/raytracing-on-grid.html
+	/// </summary>
+	/// <param name="pos"></param>
+	/// <param name="obscured"></param>
+	/// <param name="notObscured"></param>
+	private void FindObscured(int yTarget, int xTarget, ref HashSet<(int y, int x)> obscured, ref HashSet<(int y, int x)> notObscured)
+	{
+        List<(int,int)> checkedPositions = new();
+		var (yStart,xStart) = Player.Pos;
+		int dx = Math.Abs(xTarget - xStart);
+		int dy = Math.Abs(yTarget - yStart);
+		int x = xStart;
+		int y = yStart;
+		int n = 1 + dx + dy;
+		int x_inc = (xTarget > xStart) ? 1 : -1;
+		int y_inc = (yTarget > yStart) ? 1 : -1;
+		int error = dx - dy;
+		dx *= 2;
+		dy *= 2;
+
+        bool obstacleFound = false;
+
+		for (; n > 0; --n)
+		{
+			if (obstacleFound)
+			{
+                if(!notObscured.Contains((y, x)))
+				{
+					obscured.Add((y, x));
+				}
+			}
+            else
+			{
+				var e = _elements[y, x];
+
+				if (e != null && e.ObscuresVision)
+				{
+					obstacleFound = true;
+					notObscured.Add((y, x));
+				}
+				else
+				{
+					notObscured.Add((y, x));
+				}
+			}
+            checkedPositions.Add((y,x));
+			if (error > 0)
+			{
+				x += x_inc;
+				error -= dy;
+			}
+			else
+			{
+				y += y_inc;
+				error += dx;
+			}
+		}
+	}
+	internal void ReRender()
     {
         UpdateDiscoveredAndPlayerView(false);
         UpdateRendererAll();
@@ -108,12 +213,12 @@ internal class Level
             var e = _elements[y, x];
             if (e != null)
             {
-                Renderer.Instance.AddMapUpdate((e.Pos, e.GetRenderData(true, _playerView.Contains(e.Pos))));
+                Renderer.AddMapUpdate((e.Pos, e.GetRenderData(true, _playerView.Contains(e.Pos))));
             }
             else
             {
                 Position pos = new(y, x);
-                Renderer.Instance.AddMapUpdate((pos, LevelElement.GetEmptyRenderData(true, _playerView.Contains(pos))));
+                Renderer.AddMapUpdate((pos, LevelElement.GetEmptyRenderData(true, _playerView.Contains(pos))));
             }
         }
     }

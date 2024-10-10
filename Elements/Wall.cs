@@ -9,18 +9,19 @@ namespace Labb2_CsProg_ITHS.NET.Elements;
 
 internal class Wall : LevelElement
 {
-
+	private const string logMessage = "Wall is walling.";
 	internal Wall(Position p, char symbol)
 	{
 		Pos = p;
 		Symbol = symbol;
 		Name = "Wall";
 		Description = "A solid stone wall.";
+		ObscuresVision = true;
 	}
 
 	internal override void Update(Level CurrentLevel)
 	{
-		throw new NotImplementedException();
+		CurrentLevel.Renderer.AddLogLine(logMessage);
 	}
 
 

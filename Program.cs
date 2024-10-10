@@ -7,13 +7,15 @@ internal class Program
 {
 	static void Main(string[] args)
 	{
-		Console.BackgroundColor = ConsoleColor.Black;
-		Console.ForegroundColor = ConsoleColor.White;
+		ResetConsoleColors();
 		var game = new GameLoop(1, null);
 		game.GameStart();
 
+
+	}
+	public static void ResetConsoleColors()
+	{
 		Console.BackgroundColor = ConsoleColor.Black;
 		Console.ForegroundColor = ConsoleColor.White;
-
 	}
 }

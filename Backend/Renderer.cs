@@ -13,7 +13,7 @@ internal class Renderer
 
     private readonly Queue<(Position, (char c, ConsoleColor fg, ConsoleColor bg) gfx)> _mapUpdateQueue = new();
     private readonly Queue<((int y, int x) pos, (string s, ConsoleColor fg, ConsoleColor bg) gfx)> _uiUpdateQueue = new();
-    private readonly List<string> _log = new();
+    private readonly List<(string message,int number)> _log = new();
     private readonly Queue<string> _logUpdateQueue = new();
 
 
@@ -46,7 +46,8 @@ internal class Renderer
     }
     internal void Render()
     {
-        CheckConsoleBounds();
+		Console.CursorVisible = false;
+		CheckConsoleBounds();
         while (_mapUpdateQueue.TryDequeue(out var data))
         {
             var (pos, gfx) = data;
@@ -66,45 +67,56 @@ internal class Renderer
 
         RenderLog();
     }
-    private void RenderLog()
+    private void RenderLog(bool rerender = false)
     {
-        if (_logUpdateQueue.Count == 0)
-        {
-            return;
-        }
-        List<string> logLines = new();
-        int logStartX = MapWidth + MapXoffset;
-        while (_logUpdateQueue.TryDequeue(out var line))
-        {
-            _log.Add(line);
-            var lineChars = 0;
+		List<string> logLines;
+		int logStartX = MapWidth + MapXoffset;
 
-            while (lineChars < line.Length)
-            {
-                int takeChars = Math.Min(logWidth, line.Length - lineChars);
-                logLines.Add(line.Substring(lineChars, takeChars));
-                lineChars += takeChars;
-            }
-        }
-        if (logLines.Count > bufferHeight)
-        {
-            logLines.RemoveRange(0, logLines.Count - bufferHeight);
-        }
+		if (_logUpdateQueue.Count == 0)
+		{
+			return;
+		}
+		else
+		{
+			logLines = new();
+			while (_logUpdateQueue.TryDequeue(out var message))
+			{
+				CreateLines(message);
+			}
+			if (logLines.Count > bufferHeight)
+			{
+				logLines.RemoveRange(0, logLines.Count - bufferHeight);
+			}
+            RenderLines();
+		}
 
-        int logOverflow = logHeight + logLines.Count - bufferHeight;
-        if (logOverflow > 0)
-        {
-            Console.MoveBufferArea(logStartX, logOverflow, logWidth, logHeight - logOverflow, logStartX, 0);
-            logHeight -= logOverflow;
-        }
-        Console.ForegroundColor = ConsoleColor.White;
-        Console.BackgroundColor = ConsoleColor.Black;
-        foreach (var line in logLines)
-        {
-            Console.SetCursorPosition(logStartX, logHeight);
-            Console.Write(line);
-            logHeight++;
-        }
+        void RenderLines()
+		{
+			int logOverflow = logHeight + logLines.Count - bufferHeight;
+			if (logOverflow > 0)
+			{
+				Console.MoveBufferArea(logStartX, logOverflow, logWidth, logHeight - logOverflow, logStartX, 0);
+				logHeight -= logOverflow;
+			}
+			Program.ResetConsoleColors();
+			foreach (var line in logLines)
+			{
+				Console.SetCursorPosition(logStartX, logHeight);
+				Console.Write(line);
+				logHeight++;
+			}
+		}
+
+		void CreateLines(string line)
+		{
+			var lineChars = 0;
+			while (lineChars < line.Length)
+			{
+				int takeChars = Math.Min(logWidth, line.Length - lineChars);
+				logLines.Add(line.Substring(lineChars, takeChars));
+				lineChars += takeChars;
+			}
+		}
     }
     internal void SetMapCoordinates(int mapStartTop, int mapStartLeft, int height, int width)
     {
@@ -125,22 +137,32 @@ internal class Renderer
     }
     internal void AddLogLine(string line)
     {
-        _logUpdateQueue.Enqueue(line);
-    }
-    internal void AddLogMessage(string message)
-    {
-        _log.Add(message);
-    }
-    private void CheckConsoleBounds()
+        var lastMessage = _log.Count > 0 ? _log[^1].message : "";
+
+		if (lastMessage == line)
+        {
+            int number = _log[^1].number + 1;
+			_log[^1] = (lastMessage, number);
+			line = $"[{number}] {lastMessage}";
+			_logUpdateQueue.Enqueue(line);
+			logHeight -= (int)Math.Ceiling((double)line.Length/logWidth);
+		}
+		else
+		{
+			_log.Add((line, 1));
+			_logUpdateQueue.Enqueue(line);
+		}
+	}
+	private void CheckConsoleBounds()
     {
         if (Console.WindowWidth != bufferWidth || Console.WindowHeight != bufferHeight)
         {
+            Program.ResetConsoleColors();
             Console.Clear();
             PauseMessage("Window is being resized");
             bufferWidth = Console.WindowWidth;
             bufferHeight = Console.WindowHeight;
             WindowResize();
-            Console.Clear();
         }
     }
 
@@ -154,11 +176,16 @@ internal class Renderer
 
             bufferWidth = Console.WindowWidth;
             bufferHeight = Console.WindowHeight;
-        }
-        GameLoop.Instance.CurrentLevel.ReRender();
-        logHeight = 0;
-        _log[Math.Max(_log.Count - bufferHeight, 0)..].ForEach(s => AddLogLine(s));
-    }
+		}
+		Console.Clear();
+		GameLoop.Instance.CurrentLevel.ReRender();
+        if(_log.Count > 0)
+		{
+			logHeight = 0;
+			_log[^Math.Max(_log.Count - bufferHeight, 1)..].ForEach(s => _logUpdateQueue.Enqueue(s.number > 1 ? $"[{s.number}] {s.message}" : s.message));
+			RenderLog();
+		}
+	}
 
     private void PauseMessage(string reason)
     {

@@ -69,8 +69,8 @@ internal class PlayerEntity : LevelEntity, IInputEndpoint
 							var attack = CombatProvider.Attack(this, entity);
 							var counter = entity.Attack(this, attack);
 							Health -= counter.damage;
-							Renderer.Instance.AddLogMessage(attack.GenerateCombatMessage(this, entity));
-							Renderer.Instance.AddLogMessage(counter.GenerateCombatMessage(entity, this));
+							CurrentLevel.Renderer.AddLogLine(attack.GenerateCombatMessage(this, entity));
+							CurrentLevel.Renderer.AddLogLine(counter.GenerateCombatMessage(entity, this));
 						}
 						break;
 
@@ -110,7 +110,7 @@ internal class PlayerEntity : LevelEntity, IInputEndpoint
 
 			case Wall wall:
 				Health -= 1;
-				Renderer.Instance.AddLogMessage("You bump your nose into a wall, taking 1 damage.");
+				Renderer.Instance.AddLogLine("You bump your nose into a wall, taking 1 damage.");
 				reaction = Reactions.Block;
 				return true;
 
