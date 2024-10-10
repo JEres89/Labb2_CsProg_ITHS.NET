@@ -16,26 +16,44 @@ internal static class CombatProvider
 
         public readonly int damage;
 
-        public CombatResult(int attackRoll, int defenseRoll, int damage)
+		public readonly LevelEntity attacker;
+		public readonly LevelEntity defender;
+
+		public CombatResult(int attackRoll, int defenseRoll, int damage, LevelEntity attacker, LevelEntity defender)
         {
             this.attackRoll = attackRoll;
             this.defenseRoll = defenseRoll;
             this.damage = damage;
-        }
+            this.attacker = attacker;
+			this.defender = defender;
+		}
 
-        public string GenerateCombatMessage(LevelEntity attacker, LevelEntity defender)
+        public string GenerateCombatMessage()
         {
-            string msg = $"{attacker.Name} attacks {defender.Name} with a roll of {attacker.AttackDieNum}d{attacker.AttackDieSize}+{attacker.AttackMod} = {attackRoll} vs {defender.DefenseDieNum}d{defender.DefenseDieSize}+{defender.DefenseMod} = {defenseRoll}";
+            string deathMsg = defender.Health <= 0 ? $" {defender.Name + " dies " + _deathEffect[Random.Shared.Next(0, _deathEffect.Length)]}" : string.Empty;
+
+			string msg = $"{attacker.Name} attacks {defender.Name} with a roll of {attacker.AttackDieNum}d{attacker.AttackDieSize}+{attacker.AttackMod} = {attackRoll} vs {defender.DefenseDieNum}d{defender.DefenseDieSize}+{defender.DefenseMod} = {defenseRoll}, dealing {damage} damage.{deathMsg}";
             return msg;
         }
+
+        private static string[] _deathEffect =
+        {
+			"violently!",
+			"slowly... *squeak*",
+			"painfully.",
+			"mercifully, rest in peace.",
+			"quickly.",
+			"in a fountain of blood, gore and viscera, painting its' murderer forever guilty!",
+
+		};
     }
     internal static CombatResult Attack(LevelEntity attacker, LevelEntity defender)
     {
-        int attackRoll = Dice.Roll(attacker.AttackDieNum, attacker.AttackDieSize) + attacker.AttackMod;
-        int defenseRoll = Dice.Roll(defender.DefenseDieNum, defender.DefenseDieSize) + defender.DefenseMod;
+        int attackRoll = Dice.Roll(attacker.AttackDieSize, attacker.AttackDieNum) + attacker.AttackMod;
+        int defenseRoll = Dice.Roll(defender.DefenseDieSize, defender.DefenseDieNum) + defender.DefenseMod;
 
         int damage = attackRoll > defenseRoll ? attackRoll - defenseRoll : 0;
-        return new(attackRoll, defenseRoll, damage);
+        return new(attackRoll, defenseRoll, damage, attacker, defender);
     }
 
     //internal static void Heal(LevelEntity healer, LevelEntity target)

@@ -8,43 +8,47 @@ using Labb2_CsProg_ITHS.NET.Game;
 namespace Labb2_CsProg_ITHS.NET.Elements;
 internal class Snake : LevelEntity
 {
-	public Snake(Position p, char symbol) : base(p, symbol)
+	public const int SnakeHealth = 40;
+	public const int SnakeAttackDieSize = 6;
+	public const int SnakeAttackDieNum = 2;
+	public const int SnakeAttackMod = 3;
+	public const int SnakeDefenseDieSize = 3;
+	public const int SnakeDefenseDieNum = 3;
+	public const int SnakeDefenseMod = 1;
+
+	public override int MaxHealth => SnakeHealth;
+	public Snake(Position p, char symbol) : base(p, symbol, Alignment.Evil)
 	{
 		Name = "Snake";
 		Description = "A slithering, scary reptile.";
 		ViewRange = 1;
+		Health = SnakeHealth;
+		AttackDieSize = SnakeAttackDieSize;
+		AttackDieNum = SnakeAttackDieNum;
+		AttackMod = SnakeAttackMod;
+		DefenseDieSize = SnakeDefenseDieSize;
+		DefenseDieNum = SnakeDefenseDieNum;
+		DefenseMod = SnakeDefenseMod;
 	}
 
-	internal override void Update(Level CurrentLevel)
+	internal override void Update(Level currentLevel)
 	{
-		if (CurrentLevel.Player.Pos.IsAdjacent(Pos))
-		{
-			//if(!CurrentLevel.TryMove(this, Pos.GetDirection(CurrentLevel.Player.Pos).Invert(), out var collision))
-			//{
-			//	var result = collision.ActsIfCollide(this);
-			//	switch (result)
-			//	{
-			//		case Reactions.Move:
-			//			break;
-			//		case Reactions.Block:
-			//			break;
-			//		case Reactions.Aggressive:
-			//		case Reactions.Activate:
-			//		case Reactions.Acquire:
-			//		case Reactions.Trigger:
-			//		case Reactions.Status:
-			//		default:
+		Position direction;
 
-			//			break;
-			//	}
-			//}
+		if (currentLevel.Player.Pos.IsAdjacent(Pos))
+		{
+			direction = Pos.GetDirectionUnit(currentLevel.Player.Pos);
+			if(!Act(currentLevel, direction.Invert()))
+			{
+				HasMoved = Act(currentLevel, direction);
+			}
 		}
 	}
 
 
 	internal override (char c, ConsoleColor fg, ConsoleColor bg) GetRenderData(bool isDiscovered, bool isInView)
 	{
-		char c = isInView ? Symbol : ' ';
+		char c = isInView ? IsDead ? '¿' : Symbol : ' ';
 		ConsoleColor fg = isInView ? ForegroundVisibleSnake : DiscoveredSnake;
 		ConsoleColor bg = isInView ? BackroundVisibleSnake : DiscoveredSnake;
 

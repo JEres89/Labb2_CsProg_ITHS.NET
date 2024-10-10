@@ -230,50 +230,78 @@ internal class Level
             Player.Update(this);
             // TODO: update player on collidingEntity map
         }
+        else if(Player.Health <= 0)
+        {
+            // TODO: Game over
+            Renderer.DeathScreen();
+            return;
+        }
         List<LevelElement> movedElements = new();
 
         if (Player.HasMoved)
         {
             UpdateDiscoveredAndPlayerView(true);
-            Player.HasMoved = false;
             // update elements that are moving
+            for (int i = 0; i < _enemies.Count; i++)
+            {
+				LevelEntity enemy = _enemies[i];
+				if (!enemy.HasMoved)
+                {
+                    enemy.Update(this);
+                }
+            }
+            for (int i = 0; i < _enemies.Count; i++)
+            {
+				LevelEntity enemy = _enemies[i];
+                if(enemy.IsDead)
+                {
+                    _enemies.RemoveAt(i);
+                    i--;
+				}
+                else
+                {
+                    enemy.HasMoved = false;
+                }
+			}
+
+            Player.HasMoved = false;
         }
     }
 
+    internal bool IsInview(Position pos)
+    {
+        return _playerView.Contains(pos);
+	}
     internal bool TryMove(LevelEntity movingEntity, Position direction, [NotNullWhen(false)] out LevelElement? collision)
     {
         var (y, x) = movingEntity.Pos;
         collision = _elements[y + direction.Y, x + direction.X];
-        if (collision != null)//is LevelEntity collidingEntity)
+        if (collision != null)
         {
-            //bool willMove = movingEntity.ActsIfCollide(collidingEntity) != LevelElement.Reactions.Move;
+            if(collision is LevelEntity collidingEntity && collidingEntity.IsDead)
+			{
+				MoveElement(movingEntity.Pos, movingEntity.Pos.Move(direction));
+                collidingEntity.Loot(this, movingEntity);
 
-            //if (willMove)
-            //{
-            //	//collidingEntity.;
-            //	MoveElement(movingEntity.Pos, movingEntity.Pos.Move(direction));
-            //	collision = null;
-            //	return true;
-            //}
+				collision = null;
+				return true;
+            }
 
             return false;
         }
-        //else if (collision is LevelElement collidingElement)
-        //{
-        //	return false;
-        //}
-        else
-        {
-            MoveElement(movingEntity.Pos, movingEntity.Pos.Move(direction));
-            collision = null;
-            return true;
-        }
-    }
+
+		MoveElement(movingEntity.Pos, movingEntity.Pos.Move(direction));
+		collision = null;
+		return true;
+	}
     private void MoveElement(Position from, Position to)
     {
-        _elements[to.Y, to.X] = _elements[from.Y, from.X];
+        var source = _elements[from.Y, from.X];
+        var target = _elements[to.Y, to.X];
         _elements[from.Y, from.X] = null;
-        _renderUpdateCoordinates.Add(from);
+		_elements[to.Y, to.X] = source;
+
+		_renderUpdateCoordinates.Add(from);
         _renderUpdateCoordinates.Add(to);
     }
     public override string ToString()

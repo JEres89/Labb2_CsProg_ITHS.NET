@@ -20,6 +20,20 @@ internal record struct Position
     internal static Position Down = new(1, 0);
     internal static Position Right = new(0, 1);
 
+    internal static Position GetRandomDirection(List<Position>? excluded = null)
+    {
+		var random = new Random();
+		var directions = new List<Position> { Up, Down, Left, Right };
+        if(excluded != null)
+		{
+			foreach (var direction in excluded)
+			{
+				directions.Remove(direction);
+			}
+		}
+		return directions[random.Next(0, directions.Count)];
+	}
+
     internal Position(int y, int x)
     {
         Y = y;
@@ -55,9 +69,7 @@ internal record struct Position
 
     internal Position Move(Position position)
     {
-        X += position.X;
-        Y += position.Y;
-        return this;
+        return new(Y + position.Y,X + position.X);
     }
 
     internal bool IsEqual(Position position)
@@ -104,16 +116,21 @@ internal record struct Position
 
     internal Position GetDirectionUnit(Position position)
     {
+        if (Equals(position))
+        {
+            throw new Exception("Entity tries to move to itself.");
+            //return new(0,0);
+        }
         Position direction = GetDirection(position);
         var absY = Math.Abs(direction.Y);
         var absX = Math.Abs(direction.X);
         if (absY > absX)
         {
-            direction = direction with { Y = direction.Y / absY, X = 0 };
+            direction = new( direction.Y / absY, 0 );
         }
         else
         {
-            direction = direction with { Y = 0, X = direction.X / absX };
+            direction = new(0, direction.X / absX);
         }
         //var y = direction.Y / Math.Abs(direction.Y) * distance; // > 0 ? Math.Min(direction.Y, distance) : Math.Max(direction.Y, -distance);
         //var x = direction.X / Math.Abs(direction.X) * distance; //> 0 ? Math.Min(direction.X, distance) : Math.Max(direction.X, -distance);
@@ -130,10 +147,8 @@ internal record struct Position
 
     internal Position Invert()
     {
-        Y = -Y;
-        X = -X;
-        return this;
-    }
+        return new(-Y,-X);
+	}
 
     internal void Deconstruct(out int y, out int x)
     {

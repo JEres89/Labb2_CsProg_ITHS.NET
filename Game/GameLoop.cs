@@ -61,6 +61,7 @@ internal class GameLoop
         Stopwatch tickTimer = new();
         int ticks = 0;
         input.InputListener = Task.Run(input.Start);
+        //Renderer.DeathScreen();
         while (true)
         {
             tickTimer.Restart();

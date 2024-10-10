@@ -57,7 +57,7 @@ internal static class LevelReader
 		{
 			yield return buffer;
 			buffer = new byte[255];
-			Console.WriteLine("Fileposition: " + fileStream.Position);
+			//Console.WriteLine("Fileposition: " + fileStream.Position);
 		}
 
 	}
@@ -105,7 +105,7 @@ internal static class LevelReader
 					elements[count] = p = new PlayerEntity(new(y, x), c);
 					break;
 				//case 'E':
-				//	_staticElements[y, x] = new Exit();
+				//	elements[count] = new Exit(new(y, x), c);
 				//	break;
 				case 'r':
 					var r = new Rat(new(y, x), c);
@@ -164,7 +164,7 @@ internal static class LevelReader
 			byte[] buffer = new byte[1024];
 			bytesRead = await fileStream.ReadAsync(buffer, 0, 1024);
 			numRead++;
-			Console.WriteLine($"{DateTime.Now.Ticks}: copying to stream {numRead} times");
+			//Console.WriteLine($"{DateTime.Now.Ticks}: copying to stream {numRead} times");
 			queue.Enqueue(buffer);
 			//await Task.Delay(10);
 		}

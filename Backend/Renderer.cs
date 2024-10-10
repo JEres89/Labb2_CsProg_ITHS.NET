@@ -13,6 +13,8 @@ internal class Renderer
 
     private readonly Queue<(Position, (char c, ConsoleColor fg, ConsoleColor bg) gfx)> _mapUpdateQueue = new();
     private readonly Queue<((int y, int x) pos, (string s, ConsoleColor fg, ConsoleColor bg) gfx)> _uiUpdateQueue = new();
+
+	// TODO: add colored log messages
     private readonly List<(string message,int number)> _log = new();
     private readonly Queue<string> _logUpdateQueue = new();
 
@@ -55,8 +57,9 @@ internal class Renderer
             Console.ForegroundColor = gfx.fg;
             Console.BackgroundColor = gfx.bg;
             Console.Write(gfx.c);
-        }
-        while (_uiUpdateQueue.TryDequeue(out var data))
+		}
+		Program.ResetConsoleColors();
+		while (_uiUpdateQueue.TryDequeue(out var data))
         {
             var (pos, gfx) = data;
             Console.SetCursorPosition(pos.x, pos.y);
@@ -64,8 +67,7 @@ internal class Renderer
             Console.BackgroundColor = gfx.bg;
             Console.Write(gfx.s);
         }
-
-        RenderLog();
+		RenderLog();
     }
     private void RenderLog(bool rerender = false)
     {
@@ -98,7 +100,6 @@ internal class Renderer
 				Console.MoveBufferArea(logStartX, logOverflow, logWidth, logHeight - logOverflow, logStartX, 0);
 				logHeight -= logOverflow;
 			}
-			Program.ResetConsoleColors();
 			foreach (var line in logLines)
 			{
 				Console.SetCursorPosition(logStartX, logHeight);
@@ -182,7 +183,7 @@ internal class Renderer
         if(_log.Count > 0)
 		{
 			logHeight = 0;
-			_log[^Math.Max(_log.Count - bufferHeight, 1)..].ForEach(s => _logUpdateQueue.Enqueue(s.number > 1 ? $"[{s.number}] {s.message}" : s.message));
+			_log[^Math.Min(_log.Count, bufferHeight)..].ForEach(s => _logUpdateQueue.Enqueue(s.number > 1 ? $"[{s.number}] {s.message}" : s.message));
 			RenderLog();
 		}
 	}
@@ -203,4 +204,87 @@ internal class Renderer
 
         _ = InputHandler.Instance.AwaitNextKey();
     }
+
+    internal void DeathScreen()
+	{
+		Console.Clear();
+        Console.BackgroundColor = ConsoleColor.Black;
+		Console.ForegroundColor = ConsoleColor.DarkRed;
+		const string line11 = @" _____     ______       _       _______    _    _    _ ";
+		const string line12 = @"|  __ \   |  ____|     / \     |__   __|  | |  | |  | |";
+		const string line13 = @"| |  | |  | |__       / _ \       | |     | |__| |  | |";
+		const string line14 = @"| |  | |  |  __|     / /_\ \      | |     |  __  |  | |";
+		const string line15 = @"| |__| |  | |____   / _____ \     | |     | |  | |  |_|";
+		const string line16 = @"|_____/   |______| /_/     \_\    |_|     |_|  |_|  (_)";
+
+		const string line21 = @" _____     ______       _       _______    _    _    _ ";
+		const string line22 = @"DDDDDD\   EEEEEEE|     AAA     |TTTTTTT|  HHH  HHH  !!!";
+		const string line23 = @"DD|  DD|  EE|__       AAAAA       TTT     HHH__HHH  !!!";
+		const string line24 = @"DD|  DD|  EEEEE|     AA/_\AA      TTT     HHHHHHHH  !!!";
+		const string line25 = @"DD|__DD|  EE|____   AAAAAAAAA     TTT     HHH  HHH  !_!";
+		const string line26 = @"DDDDDD/   EEEEEEE| AA/     \AA    T_T     HHH  HHH  (!)";
+
+		const string line31 = "░▒▓███████▓▒░       ░▒▓████████▓▒░       ░▒▓██████▓▒░       ░▒▓████████▓▒░      ░▒▓█▓▒░░▒▓█▓▒░      ░▒▓█▓▒░";
+        const string line32 = "░▒▓█▓▒░░▒▓█▓▒░      ░▒▓█▓▒░             ░▒▓█▓▒░░▒▓█▓▒░         ░▒▓█▓▒░          ░▒▓█▓▒░░▒▓█▓▒░      ░▒▓█▓▒░";
+		const string line33 = "░▒▓█▓▒░░▒▓█▓▒░      ░▒▓█▓▒░             ░▒▓█▓▒░░▒▓█▓▒░         ░▒▓█▓▒░          ░▒▓█▓▒░░▒▓█▓▒░      ░▒▓█▓▒░";
+		const string line34 = "░▒▓█▓▒░░▒▓█▓▒░      ░▒▓██████▓▒░        ░▒▓████████▓▒░         ░▒▓█▓▒░          ░▒▓████████▓▒░      ░▒▓█▓▒░";
+		const string line35 = "░▒▓█▓▒░░▒▓█▓▒░      ░▒▓█▓▒░             ░▒▓█▓▒░░▒▓█▓▒░         ░▒▓█▓▒░          ░▒▓█▓▒░░▒▓█▓▒░      ░▒▓█▓▒░";
+		const string line36 = "░▒▓█▓▒░░▒▓█▓▒░      ░▒▓█▓▒░             ░▒▓█▓▒░░▒▓█▓▒░         ░▒▓█▓▒░          ░▒▓█▓▒░░▒▓█▓▒░             ";
+		const string line37 = "░▒▓███████▓▒░       ░▒▓████████▓▒░      ░▒▓█▓▒░░▒▓█▓▒░         ░▒▓█▓▒░          ░▒▓█▓▒░░▒▓█▓▒░      ░▒▓█▓▒░";
+
+        int version = Random.Shared.Next(1, 4);
+		int width;
+		int height;
+		string padding;
+
+		switch (version)
+        {
+            case 1:
+				width = line11.Length;
+				height = 6;
+				padding = new(' ', (Console.BufferWidth - width) / 2);
+				Console.SetCursorPosition(0, Math.Max((Console.WindowHeight - height) / 2, 0));
+				Console.WriteLine(padding + line11);
+				Console.WriteLine(padding + line12);
+				Console.WriteLine(padding + line13);
+				Console.WriteLine(padding + line14);
+				Console.WriteLine(padding + line15);
+				Console.WriteLine(padding + line16); 
+				break;
+			case 2:
+				width = line21.Length;
+				height = 6;
+				padding = new(' ', (Console.BufferWidth - width) / 2);
+				Console.SetCursorPosition(0, Math.Max((Console.WindowHeight - height) / 2, 0));
+				Console.WriteLine(padding + line21);
+				Console.WriteLine(padding + line22);
+				Console.WriteLine(padding + line23);
+				Console.WriteLine(padding + line24);
+				Console.WriteLine(padding + line25);
+				Console.WriteLine(padding + line26); 
+				break;
+			case 3:
+				width = line31.Length;
+
+				if(width > Console.BufferWidth) goto case 1;
+
+				height = 7;
+				padding = new(' ', (Console.BufferWidth - width) / 2);
+				Console.SetCursorPosition(0, Math.Max((Console.WindowHeight - height) / 2, 0));
+				Console.WriteLine(padding + line31);
+				Console.WriteLine(padding + line32);
+				Console.WriteLine(padding + line33);
+				Console.WriteLine(padding + line34);
+				Console.WriteLine(padding + line35);
+				Console.WriteLine(padding + line36);
+				Console.WriteLine(padding + line37); 
+				break;
+			default:
+                break;
+        }
+        
+
+		_ = InputHandler.Instance.AwaitNextKey();
+		Environment.Exit(0);
+	}
 }
