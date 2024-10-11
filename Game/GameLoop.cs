@@ -28,6 +28,16 @@ internal class GameLoop
         Player.SetName(player ?? string.Empty);
     }
 
+    internal void Clear()
+    {
+        Instance = null!;
+		Renderer.Clear();
+		Renderer = null!;
+		CurrentLevel.Clear();
+		CurrentLevel = null!;
+        input.Clear();
+		input = null!;
+	}
     public void GameStart()
     {
         Initialize();
@@ -68,12 +78,18 @@ internal class GameLoop
 
             Update();
 
-            //if(ticks % 10 == 0)
-            //{
-            //	Renderer.AddLogLine($"Loop tick #{ticks}");
-            //}
+			if (Player.Health <= 0)
+			{
+				Renderer.DeathScreen();
+                input.Stop();
+				return;
+			}
+			//if(ticks % 10 == 0)
+			//{
+			//	Renderer.AddLogLine($"Loop tick #{ticks}");
+			//}
 
-            Render();
+			Render();
 
             ticks++;
             int timeLeft = tickTime - (int)tickTimer.ElapsedMilliseconds;
@@ -85,7 +101,6 @@ internal class GameLoop
     private void Update()
     {
         CurrentLevel.Update();
-        //GUI.Update()
     }
 
     private void Render()

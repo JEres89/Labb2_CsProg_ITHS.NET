@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using System.Numerics;
@@ -20,9 +21,9 @@ internal record struct Position
     internal static Position Down = new(1, 0);
     internal static Position Right = new(0, 1);
 
-    internal static Position GetRandomDirection(List<Position>? excluded = null)
+    private static Random _random = new Random();
+	internal static Position GetRandomDirection(List<Position>? excluded = null)
     {
-		var random = new Random();
 		var directions = new List<Position> { Up, Down, Left, Right };
         if(excluded != null)
 		{
@@ -31,14 +32,22 @@ internal record struct Position
 				directions.Remove(direction);
 			}
 		}
-		return directions[random.Next(0, directions.Count)];
+        if(directions.Count == 0)
+		{
+			return new(0, 0);
+		}
+		return directions[_random.Next(0, directions.Count)];
 	}
 
-    internal Position(int y, int x)
+    private static bool GetNextBool()
     {
-        Y = y;
-        X = x;
-    }
+        return _random.Next(2) == 0;
+	}
+	internal Position(int y, int x)
+	{
+		Y = y;
+		X = x;
+	}
 
     internal Position(Position position)
     {
@@ -84,7 +93,7 @@ internal record struct Position
 
     internal bool IsAdjacent(Position position)
     {
-        return X - position.X <= 1 && Y - position.Y <= 1;
+        return Math.Abs(X - position.X) <= 1 && Math.Abs(Y - position.Y) <= 1;
     }
 
     internal bool IsAdjacent(int y, int x)
@@ -117,32 +126,43 @@ internal record struct Position
     internal Position GetDirectionUnit(Position position)
     {
         if (Equals(position))
-        {
-            throw new Exception("Entity tries to move to itself.");
-            //return new(0,0);
-        }
-        Position direction = GetDirection(position);
-        var absY = Math.Abs(direction.Y);
-        var absX = Math.Abs(direction.X);
-        if (absY > absX)
-        {
-            direction = new( direction.Y / absY, 0 );
-        }
-        else
-        {
-            direction = new(0, direction.X / absX);
-        }
-        //var y = direction.Y / Math.Abs(direction.Y) * distance; // > 0 ? Math.Min(direction.Y, distance) : Math.Max(direction.Y, -distance);
-        //var x = direction.X / Math.Abs(direction.X) * distance; //> 0 ? Math.Min(direction.X, distance) : Math.Max(direction.X, -distance);
-        return direction;
+		{
+			throw new Exception("Entity tries to move to itself.");
+			//return new(0,0);
+		}
+		Position direction = GetDirection(position);
+		var absY = Math.Abs(direction.Y);
+		var absX = Math.Abs(direction.X);
+		if (absY == absX)
+		{
+            if(_random.Next(2) == 0)
+            {
+				direction = new(direction.Y / absY, 0);
+			}
+            else
+            {
+				direction = new(0, direction.X / absX);
+			}
+		}
+		else if (absY > absX)
+		{
+			direction = new(direction.Y / absY, 0);
+		}
+		else
+		{
+			direction = new(0, direction.X / absX);
+		}
+		//var y = direction.Y / Math.Abs(direction.Y) * distance; // > 0 ? Math.Min(direction.Y, distance) : Math.Max(direction.Y, -distance);
+		//var x = direction.X / Math.Abs(direction.X) * distance; //> 0 ? Math.Min(direction.X, distance) : Math.Max(direction.X, -distance);
+		return direction;
     }
 
-    internal Position GetDirection(int y, int x, int distance)
+    internal Position GetDirection(Position pos, int distance)
     {
-        Position direction = GetDirection(y, x);
-        direction.Y = direction.Y > 0 ? Math.Min(direction.Y, distance) : Math.Max(direction.Y, -distance);
-        direction.X = direction.X > 0 ? Math.Min(direction.X, distance) : Math.Max(direction.X, -distance);
-        return direction;
+        Position direction = GetDirection(pos);
+        int y = direction.Y > 0 ? Math.Min(direction.Y, distance) : Math.Max(direction.Y, -distance);
+        int x = direction.X > 0 ? Math.Min(direction.X, distance) : Math.Max(direction.X, -distance);
+        return new(y,x);
     }
 
     internal Position Invert()

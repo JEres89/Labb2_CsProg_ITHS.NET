@@ -11,7 +11,7 @@ namespace Labb2_CsProg_ITHS.NET.Elements;
 internal abstract class LevelEntity : LevelElement
 {
 	public int ViewRange { get; protected set; }
-	public int Health { get; protected set; }
+	public virtual int Health { get; protected set; }
     public abstract int MaxHealth { get; }
     public int AttackDieSize { get; protected set; }
 	public int AttackDieNum { get; protected set; }
@@ -20,7 +20,7 @@ internal abstract class LevelEntity : LevelElement
 	public int DefenseDieNum { get; protected set; }
 	public int DefenseMod { get; protected set; }
 
-	public bool HasMoved { get; set; }
+	public bool HasActed { get; set; }
 	public bool IsDead { get => Health <= 0; }
 
 	protected readonly Alignment alignment;
@@ -39,11 +39,11 @@ internal abstract class LevelEntity : LevelElement
 			(Alignment.Neutral, Alignment.Good)		=> Reactions.Block,
 			(Alignment.Neutral, Alignment.Evil)		=> Reactions.Aggressive,
 			(Alignment.Good,	Alignment.Neutral)	=> Reactions.Block,
-			(Alignment.Good,	Alignment.Good)		=> HasMoved ? Reactions.Block : Reactions.Move,
+			(Alignment.Good,	Alignment.Good)		=> HasActed ? Reactions.Block : Reactions.Move,
 			(Alignment.Good,	Alignment.Evil)		=> Reactions.Aggressive,
 			(Alignment.Evil,	Alignment.Neutral)	=> Reactions.Aggressive,
 			(Alignment.Evil,	Alignment.Good)		=> Reactions.Aggressive,
-			(Alignment.Evil,	Alignment.Evil)		=> HasMoved ? Reactions.Block : Reactions.Move,
+			(Alignment.Evil,	Alignment.Evil)		=> HasActed ? Reactions.Block : Reactions.Move,
 			_ => Reactions.Block
 		};
 	}
@@ -60,13 +60,32 @@ internal abstract class LevelEntity : LevelElement
 				return false;
 		}
 	}
+	internal virtual bool UpdateMove(Level currentLevel, Position awayFrom, int tries = 3)
+	{
+		tries =
+			tries > 3 ? 3 :
+			tries < 1 ? 1 : tries;
+		Position start = Pos;
+		List<Position> excludedDir = new List<Position>(4);
+		excludedDir.Add(awayFrom);
+		while (!HasActed && excludedDir.Count < tries + 1)
+		{
+			var moveDirection = Position.GetRandomDirection(excludedDir);
+			if (!Act(currentLevel, moveDirection))
+			{
+				excludedDir.Add(moveDirection);
+			}
+		}
+
+		return Pos != start;
+	}
 	protected bool Act(Level currentLevel, Position direction)
 	{
 		LevelElement? collisionTarget;
 		if (currentLevel.TryMove(this, direction, out collisionTarget))
 		{
 			Pos = Pos.Move(direction);
-			return true;
+			return HasActed = true;
 		}
 		else
 		{
@@ -89,7 +108,7 @@ internal abstract class LevelEntity : LevelElement
 					default:
 						break;
 				}
-				return true;
+				return HasActed;
 			}
 			else
 			{
@@ -97,30 +116,30 @@ internal abstract class LevelEntity : LevelElement
 			}
 		}
 	}
-	protected virtual void BlockMove(Level currentLevel, LevelElement collisionTarget)
-	{
-
-	}
+	// default is no behaviour, override if needed
+	protected virtual void BlockMove(Level currentLevel, LevelElement collisionTarget) {}
 	protected virtual void AttackEnemy(Level currentLevel, LevelElement collisionTarget)
 	{
 		if (collisionTarget is LevelEntity enemy)
 		{
+			bool isPlayer = this is PlayerEntity;
 			var attack = Attack(this, enemy);
-			var counter = enemy.AttackedBy(this, attack);
-			currentLevel.Renderer.AddLogLine(attack.GenerateCombatMessage());
+			var counter = enemy.AttackedBy(currentLevel, this, attack);
+			currentLevel.Renderer.AddLogLine(attack.GenerateCombatMessage(), isPlayer ? ConsoleColor.DarkGreen : ConsoleColor.Red);
 			if (counter.defender == this)
 			{
 				Health -= counter.damage;
-				currentLevel.Renderer.AddLogLine(counter.GenerateCombatMessage());
+				currentLevel.Renderer.AddLogLine(counter.GenerateCombatMessage(), isPlayer ? ConsoleColor.Red : ConsoleColor.DarkGreen);
 			}
+			HasActed = true;
 		}
 	}
 	protected virtual void PushFriend(Level currentLevel, LevelElement collisionTarget, Position direction)
 	{
 		if (collisionTarget is LevelEntity friend)
 		{
-			// To avoid circular movement lock, we need to set HasMoved to true before updating the friend.
-			HasMoved = true;
+			// To avoid circular movement lock, we need to set HasActed to true before updating the friend.
+			HasActed = true;
 			if (friend.UpdateMove(currentLevel, direction.Invert()))
 			{
 				if(currentLevel.TryMove(this, direction, out var newCollision))
@@ -136,26 +155,19 @@ internal abstract class LevelEntity : LevelElement
 	}
 
 
-	internal enum Alignment
-	{
-		None,
-		Neutral,
-		Evil,
-		Good
-	}
-
-	internal CombatResult AttackedBy(LevelEntity attacker, CombatResult attackResult)
+	internal CombatResult AttackedBy(Level currentLevel, LevelEntity attacker, CombatResult attackResult)
 	{
 		Health -= attackResult.damage;
 		if(Health <= 0)
 		{
-			HasMoved = true;
+			HasActed = true;
+			DeathEffect(currentLevel, attacker);
 			return attackResult;
 		}
 
 		return Attack(this, attacker);
 	}
-
+	protected virtual void DeathEffect(Level currentLevel, LevelEntity attacker) {}
 	internal void Loot(Level currentLevel, LevelEntity entity)
 	{
 		if(entity is PlayerEntity player)
@@ -167,11 +179,11 @@ internal abstract class LevelEntity : LevelElement
 		{
 			if (currentLevel.IsInview(Pos))
 			{
-				currentLevel.Renderer.AddLogLine($"You see {entity.Description} consume a fallen {Name} whole, absorbing its power.");
+				currentLevel.Renderer.AddLogLine($"You see {entity.Description} consume a fallen {Name} whole, absorbing its power.", ConsoleColor.DarkYellow);
 			}
 			else
 			{
-				currentLevel.Renderer.AddLogLine($"You hear a faint crushing of bones and ripping of flesh, somewhere something is having a snack...");
+				currentLevel.Renderer.AddLogLine($"You hear a faint crushing of bones and ripping of flesh, somewhere something is having a snack...", ConsoleColor.DarkYellow);
 
 			}
 			entity.Consume(this);
@@ -185,25 +197,12 @@ internal abstract class LevelEntity : LevelElement
 		DefenseDieSize++;
 		DefenseMod++;
 	}
-	internal virtual bool UpdateMove(Level currentLevel, Position from)
+
+	internal enum Alignment
 	{
-		Position start = Pos;
-		List<Position> excludedDir = new List<Position>(4);
-		excludedDir.Add(from);
-		while (!HasMoved)
-		{
-			var moveDirection = Position.GetRandomDirection(excludedDir);
-			if (Act(currentLevel, moveDirection))
-			{
-				HasMoved = true;
-			}
-			else
-			{
-				excludedDir.Add(moveDirection);
-			}
-		}
-
-		return Pos != start;
+		None,
+		Neutral,
+		Evil,
+		Good
 	}
-
 }

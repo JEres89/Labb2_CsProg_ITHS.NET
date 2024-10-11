@@ -11,7 +11,7 @@ using System.Text;
 using System.Threading.Tasks;
 
 namespace Labb2_CsProg_ITHS.NET.Game;
-internal class Level
+internal class Level 
 {
     public int Width { get; private set; }
     public int Height { get; private set; }
@@ -37,7 +37,18 @@ internal class Level
         Player = player;
     }
 
-    internal void InitMap()
+    internal void Clear()
+	{
+        _elements = null!;
+		_discovered = null!;
+		_enemies.Clear();
+        _enemies = null!;
+        _playerView.Clear();
+        _playerView = null!;
+		_renderUpdateCoordinates.Clear();
+		_renderUpdateCoordinates = null!;
+	}
+	internal void InitMap()
     {
         UpdateDiscoveredAndPlayerView(true);
         //UpdateRendererAll();
@@ -223,29 +234,28 @@ internal class Level
         }
     }
 
-    internal void Update()
+    internal bool Update()
     {
         if (Player.WillAct)
         {
             Player.Update(this);
-            // TODO: update player on collidingEntity map
         }
         else if(Player.Health <= 0)
         {
-            // TODO: Game over
-            Renderer.DeathScreen();
-            return;
+            return true;
         }
-        List<LevelElement> movedElements = new();
+        //if(Player.StatusChanged) Renderer.UpdateStatusBar(Player.GetStatusText());
 
-        if (Player.HasMoved)
+		List<LevelElement> movedElements = new();
+
+        if (Player.HasActed)
         {
             UpdateDiscoveredAndPlayerView(true);
-            // update elements that are moving
+
             for (int i = 0; i < _enemies.Count; i++)
             {
 				LevelEntity enemy = _enemies[i];
-				if (!enemy.HasMoved)
+				if (!enemy.HasActed)
                 {
                     enemy.Update(this);
                 }
@@ -260,13 +270,17 @@ internal class Level
 				}
                 else
                 {
-                    enemy.HasMoved = false;
+                    enemy.HasActed = false;
                 }
 			}
 
-            Player.HasMoved = false;
-        }
-    }
+			if (Player.StatusChanged) Renderer.UpdateStatusBar(Player.GetStatusText());
+			Player.HasActed = false;
+			return true;
+		}
+        if(Player.StatusChanged) Renderer.UpdateStatusBar(Player.GetStatusText());
+        return false;
+	}
 
     internal bool IsInview(Position pos)
     {
@@ -274,7 +288,13 @@ internal class Level
 	}
     internal bool TryMove(LevelEntity movingEntity, Position direction, [NotNullWhen(false)] out LevelElement? collision)
     {
-        var (y, x) = movingEntity.Pos;
+        if(direction.Y != 0 && direction.X != 0)
+		{
+			//throw new ArgumentException("Direction must be either vertical or horizontal, not diagonal.");
+            collision = null;
+            return false;
+		}
+		var (y, x) = movingEntity.Pos;
         collision = _elements[y + direction.Y, x + direction.X];
         if (collision != null)
         {
@@ -304,7 +324,12 @@ internal class Level
 		_renderUpdateCoordinates.Add(from);
         _renderUpdateCoordinates.Add(to);
     }
-    public override string ToString()
+    internal void RemoveElement(Position pos)
+	{
+		_elements[pos.Y, pos.X] = null;
+		_renderUpdateCoordinates.Add(pos);
+	}
+	public override string ToString()
     {
         StringBuilder sb = new();
         var span = _elements.AsSpan2D();
@@ -321,4 +346,6 @@ internal class Level
         }
         return sb.ToString();
     }
+
+
 }

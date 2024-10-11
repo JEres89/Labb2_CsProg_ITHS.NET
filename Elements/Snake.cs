@@ -11,10 +11,10 @@ internal class Snake : LevelEntity
 	public const int SnakeHealth = 40;
 	public const int SnakeAttackDieSize = 6;
 	public const int SnakeAttackDieNum = 2;
-	public const int SnakeAttackMod = 3;
-	public const int SnakeDefenseDieSize = 3;
-	public const int SnakeDefenseDieNum = 3;
-	public const int SnakeDefenseMod = 1;
+	public const int SnakeAttackMod = 1;
+	public const int SnakeDefenseDieSize = 4;
+	public const int SnakeDefenseDieNum = 2;
+	public const int SnakeDefenseMod = 0;
 
 	public override int MaxHealth => SnakeHealth;
 	public Snake(Position p, char symbol) : base(p, symbol, Alignment.Evil)
@@ -23,9 +23,11 @@ internal class Snake : LevelEntity
 		Description = "A slithering, scary reptile.";
 		ViewRange = 1;
 		Health = SnakeHealth;
+
 		AttackDieSize = SnakeAttackDieSize;
 		AttackDieNum = SnakeAttackDieNum;
 		AttackMod = SnakeAttackMod;
+
 		DefenseDieSize = SnakeDefenseDieSize;
 		DefenseDieNum = SnakeDefenseDieNum;
 		DefenseMod = SnakeDefenseMod;
@@ -33,14 +35,14 @@ internal class Snake : LevelEntity
 
 	internal override void Update(Level currentLevel)
 	{
-		Position direction;
+		Position playerDirection;
 
 		if (currentLevel.Player.Pos.IsAdjacent(Pos))
 		{
-			direction = Pos.GetDirectionUnit(currentLevel.Player.Pos);
-			if(!Act(currentLevel, direction.Invert()))
+			playerDirection = Pos.GetDirectionUnit(currentLevel.Player.Pos);
+			if(!UpdateMove(currentLevel, playerDirection, 1))
 			{
-				HasMoved = Act(currentLevel, direction);
+				Act(currentLevel, playerDirection);
 			}
 		}
 	}
@@ -55,6 +57,6 @@ internal class Snake : LevelEntity
 		return (c, fg, bg);
 	}
 	public static ConsoleColor BackroundVisibleSnake { get; } = ConsoleColor.Gray;
-	public static ConsoleColor ForegroundVisibleSnake { get; } = ConsoleColor.Green;
+	public static ConsoleColor ForegroundVisibleSnake { get; } = ConsoleColor.DarkGreen;
 	public static ConsoleColor DiscoveredSnake { get; } = ConsoleColor.DarkGray;
 }

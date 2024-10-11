@@ -10,7 +10,7 @@ internal class Rat : LevelEntity
 {
 	public const int RatHealth = 20;
 
-	public const int RatAttackDieSize = 8;
+	public const int RatAttackDieSize = 6;
 	public const int RatAttackDieNum = 1;
 	public const int RatAttackMod = 0;
 
@@ -45,26 +45,53 @@ internal class Rat : LevelEntity
 		{
 			direction = Position.GetRandomDirection();
 		}
-		HasMoved = Act(currentLevel, direction);
+		Act(currentLevel, direction);
 	}
-
-	internal override bool UpdateMove(Level currentLevel, Position from)
+	/// <summary>
+	/// Special behaviour for rat; if another rat tries to push it, it first tries to move or attack the player if within range before moving out of the way.
+	/// </summary>
+	/// <returns><see langword="true"/> if the rat moved, it may still have acted if <see langword="false"/>.</returns>
+	internal override bool UpdateMove(Level currentLevel, Position from, int tries = 3)
 	{
 		Position start = Pos;
 
 		if (currentLevel.Player.Pos.Distance(Pos) <= ViewRange)
 		{
-			if (Act(currentLevel, Pos.GetDirectionUnit(currentLevel.Player.Pos)))
+			Position direction = Pos.GetDirection(currentLevel.Player.Pos, 1);
+			if(direction.Y != 0 && direction.X != 0)
 			{
-				HasMoved = true;
+				if (!Act(currentLevel, new(direction.Y,0)))
+				{
+					Act(currentLevel, new(0, direction.X));
+				}
+			}
+			else
+			{
+				Act(currentLevel, direction);
 			}
 		}
 
-		if (!HasMoved)
+		if (!HasActed)
 		{
-			return base.UpdateMove(currentLevel, from);
+			return base.UpdateMove(currentLevel, from, tries);
 		}
 		return Pos != start;
+	}
+	protected override void DeathEffect(Level currentLevel, LevelEntity attacker)
+	{
+		var direction = attacker.Pos.GetDirection(Pos);
+		if (currentLevel.TryMove(this, direction, out var collision))
+		{
+			Pos = Pos.Move(direction);
+			currentLevel.Renderer.AddLogLine("The rat rolls away from your strike.");
+		}
+		else if(collision is Rat rat)
+		{
+			currentLevel.Renderer.AddLogLine("The rat flies away from the force of your blow, straight into the mouth of "+rat.Description);
+			rat.Consume(this);
+			currentLevel.RemoveElement(Pos);
+		}
+
 	}
 
 	internal override (char c, ConsoleColor fg, ConsoleColor bg) GetRenderData(bool isDiscovered, bool isInView)

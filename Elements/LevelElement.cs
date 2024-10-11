@@ -8,8 +8,7 @@ using Labb2_CsProg_ITHS.NET.Game;
 namespace Labb2_CsProg_ITHS.NET.Elements;
 internal abstract class LevelElement
 {
-	public Position Pos { get; 
-		protected set; }
+	public Position Pos { get; protected set; }
 	public char Symbol { get; protected set; }
 	public string Name { get; protected set; }
 	public string Description { get; protected set; }
