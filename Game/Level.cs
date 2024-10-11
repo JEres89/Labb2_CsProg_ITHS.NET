@@ -11,7 +11,7 @@ using System.Text;
 using System.Threading.Tasks;
 
 namespace Labb2_CsProg_ITHS.NET.Game;
-internal class Level
+internal class Level 
 {
     public int Width { get; private set; }
     public int Height { get; private set; }
@@ -37,7 +37,18 @@ internal class Level
         Player = player;
     }
 
-    internal void InitMap()
+    internal void Clear()
+	{
+        _elements = null!;
+		_discovered = null!;
+		_enemies.Clear();
+        _enemies = null!;
+        _playerView.Clear();
+        _playerView = null!;
+		_renderUpdateCoordinates.Clear();
+		_renderUpdateCoordinates = null!;
+	}
+	internal void InitMap()
     {
         UpdateDiscoveredAndPlayerView(true);
         //UpdateRendererAll();
@@ -223,60 +234,102 @@ internal class Level
         }
     }
 
-    internal void Update()
+    internal bool Update()
     {
         if (Player.WillAct)
         {
             Player.Update(this);
-            // TODO: update player on collidingEntity map
         }
-        List<LevelElement> movedElements = new();
+        else if(Player.Health <= 0)
+        {
+            return true;
+        }
+        //if(Player.StatusChanged) Renderer.UpdateStatusBar(Player.GetStatusText());
 
-        if (Player.HasMoved)
+		List<LevelElement> movedElements = new();
+
+        if (Player.HasActed)
         {
             UpdateDiscoveredAndPlayerView(true);
-            Player.HasMoved = false;
-            // update elements that are moving
-        }
-    }
 
+            for (int i = 0; i < _enemies.Count; i++)
+            {
+				LevelEntity enemy = _enemies[i];
+				if (!enemy.HasActed)
+                {
+                    enemy.Update(this);
+                }
+            }
+            for (int i = 0; i < _enemies.Count; i++)
+            {
+				LevelEntity enemy = _enemies[i];
+                if(enemy.IsDead)
+                {
+                    _enemies.RemoveAt(i);
+                    i--;
+				}
+                else
+                {
+                    enemy.HasActed = false;
+                }
+			}
+
+			if (Player.StatusChanged) Renderer.UpdateStatusBar(Player.GetStatusText());
+			Player.HasActed = false;
+			return true;
+		}
+        if(Player.StatusChanged) Renderer.UpdateStatusBar(Player.GetStatusText());
+        return false;
+	}
+
+    internal bool IsInview(Position pos)
+    {
+        return _playerView.Contains(pos);
+	}
     internal bool TryMove(LevelEntity movingEntity, Position direction, [NotNullWhen(false)] out LevelElement? collision)
     {
-        var (y, x) = movingEntity.Pos;
+        if(direction.Y != 0 && direction.X != 0)
+		{
+			//throw new ArgumentException("Direction must be either vertical or horizontal, not diagonal.");
+            collision = null;
+            return false;
+		}
+		var (y, x) = movingEntity.Pos;
         collision = _elements[y + direction.Y, x + direction.X];
-        if (collision != null)//is LevelEntity collidingEntity)
+        if (collision != null)
         {
-            //bool willMove = movingEntity.ActsIfCollide(collidingEntity) != LevelElement.Reactions.Move;
+            if(collision is LevelEntity collidingEntity && collidingEntity.IsDead)
+			{
+				MoveElement(movingEntity.Pos, movingEntity.Pos.Move(direction));
+                collidingEntity.Loot(this, movingEntity);
 
-            //if (willMove)
-            //{
-            //	//collidingEntity.;
-            //	MoveElement(movingEntity.Pos, movingEntity.Pos.Move(direction));
-            //	collision = null;
-            //	return true;
-            //}
+				collision = null;
+				return true;
+            }
 
             return false;
         }
-        //else if (collision is LevelElement collidingElement)
-        //{
-        //	return false;
-        //}
-        else
-        {
-            MoveElement(movingEntity.Pos, movingEntity.Pos.Move(direction));
-            collision = null;
-            return true;
-        }
-    }
+
+		MoveElement(movingEntity.Pos, movingEntity.Pos.Move(direction));
+		collision = null;
+		return true;
+	}
     private void MoveElement(Position from, Position to)
     {
-        _elements[to.Y, to.X] = _elements[from.Y, from.X];
+        var source = _elements[from.Y, from.X];
+        var target = _elements[to.Y, to.X];
         _elements[from.Y, from.X] = null;
-        _renderUpdateCoordinates.Add(from);
+		_elements[to.Y, to.X] = source;
+
+		_renderUpdateCoordinates.Add(from);
         _renderUpdateCoordinates.Add(to);
     }
-    public override string ToString()
+    internal void RemoveElement(Position pos)
+	{
+		_elements[pos.Y, pos.X] = null;
+		_renderUpdateCoordinates.Add(pos);
+	}
+	public override string ToString()
     {
         StringBuilder sb = new();
         var span = _elements.AsSpan2D();
@@ -293,4 +346,6 @@ internal class Level
         }
         return sb.ToString();
     }
+
+
 }

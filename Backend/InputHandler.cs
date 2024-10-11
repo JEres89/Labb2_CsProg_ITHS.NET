@@ -12,12 +12,15 @@ internal class InputHandler
     private InputHandler() { }
 
     internal Task<ConsoleKeyInfo> InputListener = default!;
-    internal ConcurrentQueue<ConsoleKeyInfo> KeyBuffer { get; private set; } = new();
     private Dictionary<ConsoleKey, IInputEndpoint> _listeners = new();
     public bool ReadAllKeys { get; set; } = false;
 
     private bool running = false;
 
+    internal void Clear()
+    {
+		_listeners.Clear();
+	}
     internal ConsoleKeyInfo Start()
     {
         ConsoleKeyInfo k = default;

@@ -17,7 +17,7 @@ internal abstract class LevelElement
 
     public static explicit operator char(LevelElement element) => element == null ? ' ' : element.Symbol;
 
-	internal abstract void Update(Level CurrentLevel);
+	internal abstract void Update(Level currentLevel);
 
 
 
@@ -33,13 +33,8 @@ internal abstract class LevelElement
 	internal enum Reactions
 	{
 		Block,      //none, this element is not affected in any way
-		Aggressive, //is an enemy 
-		Interact,   //is a friend 
 		Move,       //this element will move out of the way of the element
-		Activate,   //performs a function
-		Acquire,    //this element can be obtained as an owned object
-		Trigger,    //triggers an event elsewhere
-		Status,     //Causes a passive lingering effect on the instigator
+		Aggressive, //is an enemy 
 	}
 }
 

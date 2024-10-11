@@ -9,13 +9,72 @@ using Labb2_CsProg_ITHS.NET.Game;
 namespace Labb2_CsProg_ITHS.NET.Elements;
 internal class PlayerEntity : LevelEntity, IInputEndpoint
 {
+
+	public const int PlayerHealth = 100;
+
+	public const int PlayerAttackDieSize = 4;
+	public const int PlayerAttackDieNum = 3;
+	public const int PlayerAttackMod = 2;
+
+	public const int PlayerDefenseDieSize = 6;
+	public const int PlayerDefenseDieNum = 1;
+	public const int PlayerDefenseMod = 2;
+	public override int MaxHealth => PlayerHealth;
+
+	public new string Name { 
+		get => base.Name; 
+		set { 
+			base.Name = value; 
+			UpdateStatusText(); } 
+	}
+	public override int Health { 
+		get => base.Health;
+		protected set {
+			base.Health = value;
+			UpdateStatusText(); }
+	}
+	public int Turn
+	{
+		get => turn;
+		protected set
+		{
+			turn = value;
+			UpdateStatusText();
+		}
+	}
+	public bool StatusChanged { get; private set; }
+	string statusText = default!;
+	int turn = 0;
+
 	public bool WillAct { get; set; }
+
 	private ConsoleKeyInfo pressedKey;
-	public PlayerEntity(Position p, char symbol) : base(p, symbol)
+	public PlayerEntity(Position p, char symbol) : base(p, symbol, Alignment.Good)
 	{
 		Name = "";
 		Description = "You.";
-		ViewRange = 3;
+		ViewRange = 4;
+		Health = PlayerHealth;
+		
+		AttackDieSize = PlayerAttackDieSize;
+		AttackDieNum = PlayerAttackDieNum;
+		AttackMod = PlayerAttackMod;
+		
+		DefenseDieSize = PlayerDefenseDieSize;
+		DefenseDieNum = PlayerDefenseDieNum;
+		DefenseMod = PlayerDefenseMod;
+
+		//UpdateStatusText();
+	}
+	private void UpdateStatusText()
+	{
+		StatusChanged = true;
+		statusText = $"{Name}: {Health} HP, {AttackDieNum}d{AttackDieSize}+{AttackMod} ATK, {DefenseDieNum}d{DefenseDieSize}+{DefenseMod} DEF. Has survived a total of {turn} turns!";
+	}
+	public string GetStatusText()
+	{
+		StatusChanged = false;
+		return statusText;
 	}
 	public void SetName(string name)
 	{
@@ -37,69 +96,19 @@ internal class PlayerEntity : LevelEntity, IInputEndpoint
 
 		if (direction == default)
 		{
-			HasMoved = false;
+			HasActed = false;
 		}
 		else
 		{
-			HasMoved = Act(CurrentLevel, direction);
+			Act(CurrentLevel, direction);
 		}
 		pressedKey = default;
-	}
-
-	private bool Act(Level CurrentLevel, Position direction)
-	{
-		LevelElement? collisionTarget;
-		if (CurrentLevel.TryMove(this, direction, out collisionTarget))
+		if (HasActed)
 		{
-			Pos = Pos.Move(direction);
-			return true;
-		}
-		else
-		{
-			if (ActsIfCollide(collisionTarget, out var reaction))
-			{
-				switch (reaction)
-				{
-					case Reactions.Block:
-						break;
-
-					case Reactions.Aggressive:
-						if (collisionTarget is LevelEntity entity)
-						{
-							var attack = CombatProvider.Attack(this, entity);
-							var counter = entity.Attack(this, attack);
-							Health -= counter.damage;
-							CurrentLevel.Renderer.AddLogLine(attack.GenerateCombatMessage(this, entity));
-							CurrentLevel.Renderer.AddLogLine(counter.GenerateCombatMessage(entity, this));
-						}
-						break;
-
-					case Reactions.Move:
-						break;
-
-					case Reactions.Activate:
-						break;
-
-					case Reactions.Acquire:
-						break;
-
-					case Reactions.Trigger:
-						break;
-
-					case Reactions.Status:
-						break;
-
-					default:
-						break;
-				}
-				return true;
-			}
-			else
-			{
-				return false;
-			}
+			Turn++;
 		}
 	}
+
 	protected override bool ActsIfCollide(LevelElement element, out Reactions reaction)
 	{
 		switch (element)
@@ -109,8 +118,6 @@ internal class PlayerEntity : LevelEntity, IInputEndpoint
 				return reaction != Reactions.Block;
 
 			case Wall wall:
-				Health -= 1;
-				Renderer.Instance.AddLogLine("You bump your nose into a wall, taking 1 damage.");
 				reaction = Reactions.Block;
 				return true;
 
@@ -124,7 +131,14 @@ internal class PlayerEntity : LevelEntity, IInputEndpoint
 		}
 	}
 
-
+	protected override void BlockMove(Level currentLevel, LevelElement collisionTarget)
+	{
+		if (collisionTarget is Wall)
+		{
+			Health -= 1;
+			currentLevel.Renderer.AddLogLine("You bump your nose into a wall, taking 1 damage.", ConsoleColor.Yellow);
+		}
+	}
 
 	internal override (char c, ConsoleColor fg, ConsoleColor bg) GetRenderData(bool isDiscovered, bool isInView)
 	{
@@ -133,7 +147,7 @@ internal class PlayerEntity : LevelEntity, IInputEndpoint
 
 	public void KeyPressed(ConsoleKeyInfo key)
 	{
-		if (WillAct || HasMoved)
+		if (WillAct || HasActed)
 			return;
 		else
 		{
